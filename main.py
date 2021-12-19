@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+import random
 
 FPS = 60
 W = 1000  # ширина экрана
@@ -41,6 +42,20 @@ class Character(pygame.sprite.Sprite):
             self.rect.y += 3
 
 
+class Point(pygame.sprite.Sprite):
+    def __init__(self, x, y, filename):
+        pygame.sprite.Sprite.__init__(self)
+        fullname = os.path.join('data', filename)
+        self.image = pygame.image.load(fullname).convert_alpha()
+        self.rect = self.image.get_rect(center=(x, y))
+
+
+# Создание монеток
+moneys = pygame.sprite.Group()
+
+for i in range(5):
+    moneys.add(Point(random.randint(100, 900), random.randint(100, 600),  'money.png'))
+
 character = Character(100, 'character_right.png')
 enemy = Character(10, 'enemy_right.png')
 
@@ -72,6 +87,9 @@ while 1:
 
     # НАРИСОВАЛ ВРАГА
     sc.blit(enemy.image, enemy.rect)
+
+    # Нарисовал монетки
+    moneys.draw(sc)
 
     # обновил дисплей
     pygame.display.update()
