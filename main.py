@@ -14,7 +14,7 @@ UP = "to the up"
 DOWN = "to the down"
 STOP = "stop"
 
-version = '0.2.1'
+version = '0.3.2'
 
 pygame.init()
 
