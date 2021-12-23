@@ -11,7 +11,7 @@ BLUE = (0, 70, 225)
 sc = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 
-version = '0.3.2'  # было 0.3.1 поставил 0.3.2 (исправил бег)
+version = '0.3.2'  # было 0.3.1 поставил 0.3.2 (исправил бег))
 
 
 def load_image(name, colorkey=None):
