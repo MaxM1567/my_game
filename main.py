@@ -11,7 +11,7 @@ BLUE = (0, 70, 225)
 sc = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 
-version = '0.3.1'
+version = '0.3.2'  # было 0.3.1 поставил 0.3.2 (исправил бег)
 
 
 def load_image(name, colorkey=None):
@@ -110,27 +110,43 @@ if __name__ == '__main__':
     pygame.init()
     player, level_x, level_y = generate_level(load_level('map.txt'))
 
-    while True:
+    while 1:
         for i in pygame.event.get():
             if i.type == pygame.QUIT:
                 sys.exit()
-            elif i.type == pygame.KEYDOWN:
-                if i.key == pygame.K_LEFT:
-                    # player.image = pygame.image.load('data/character_left.png').convert_alpha()
-                    test_p1.rect.x -= 3
-
-                elif i.key == pygame.K_RIGHT:
-                    # player.image = pygame.image.load('data/character_right.png').convert_alpha()
-                    test_p1.rect.x += 3
-
-                elif i.key == pygame.K_UP:
-                    test_p1.rect.y -= 3
-
-                elif i.key == pygame.K_DOWN:
-                    test_p1.rect.y += 3
+            # elif i.type == pygame.KEYDOWN:
+            #     if i.key == pygame.K_LEFT:
+            #         motion = LEFT
+            #     elif i.key == pygame.K_RIGHT:
+            #         motion = RIGHT
+            #     elif i.key == pygame.K_UP:
+            #         motion = UP
+            #     elif i.key == pygame.K_DOWN:
+            #         motion = DOWN
+            # elif i.type == pygame.KEYUP:
+            #     if i.key in [pygame.K_LEFT,
+            #                  pygame.K_RIGHT]:
+            #         motion = STOP
 
         tiles_group.draw(sc)
         player_group.draw(sc)
         pygame.display.flip()
+        keys = pygame.key.get_pressed()
+        # if motion == LEFT:
+        #     test_p1.rect.x -= 3
+        # elif motion == RIGHT:
+        #     test_p1.rect.x += 3
+        # elif motion == DOWN:
+        #     test_p1.rect.y += 3
+        # elif motion == UP:
+        #     test_p1.rect.y -= 3
+        if keys[pygame.K_LEFT]:
+            test_p1.rect.x -= 3
+        elif keys[pygame.K_RIGHT]:
+            test_p1.rect.x += 3
+        elif keys[pygame.K_DOWN]:
+            test_p1.rect.y += 3
+        elif keys[pygame.K_UP]:
+            test_p1.rect.y -= 3
 
         clock.tick(FPS)
