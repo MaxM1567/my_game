@@ -11,7 +11,7 @@ BLUE = (0, 70, 225)
 sc = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 
-version = '0.3.1'
+version = '0.4.2'  # было 0.3.1 поставил 0.3.2 (исправил бег)
 
 
 def load_image(name, colorkey=None):
@@ -38,7 +38,6 @@ def load_level(filename):
 
 
 tile_images = {'wall': load_image('concrete_brick.png'), 'empty': load_image('concrete_brick_2.png')}
-player_image = load_image('character_right.png')
 
 tile_width = tile_height = 48
 
@@ -51,41 +50,36 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, filename):
         super().__init__(player_group, all_sprites)
-        self.image = player_image
+        self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
 
-'''
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, filename):
-        pygame.sprite.Sprite.__init__(self, player_group, all_sprites)
-        fullname = os.path.join('data', filename)
-        self.image = pygame.image.load(fullname).convert_alpha()
-        self.rect = self.image.get_rect(center=(x, 100))
+    def __init__(self, x, y, filename):
+        pygame.sprite.Sprite.__init__(self, mobs_group, all_sprites)
+        self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+        self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
-    def update(self, motion):
-        if enemy.rect.x == character.rect.x and enemy.rect.y != character.rect.y:
+    def update(self):
+        if self.rect.x == test_p1.rect.x and self.rect.y != test_p1.rect.y:
             pass
-        elif enemy.rect.x < character.rect.x:
+        elif self.rect.x < test_p1.rect.x:
             self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
-            enemy.rect.x += 1
+            self.rect.x += 1
         else:
             self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
-            enemy.rect.x -= 1
-
-        if enemy.rect.y < character.rect.y:
-            enemy.rect.y += 1
+            self.rect.x -= 1
+        if self.rect.y < test_p1.rect.y:
+            self.rect.y += 1
         else:
-            enemy.rect.y -= 1
-'''
+            self.rect.y -= 1
 
-# основной персонаж
-player = None
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
+mobs_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 
@@ -100,37 +94,65 @@ def generate_level(level):
                 Tile('wall', x, y)
             elif level[y][x] == '@':
                 Tile('empty', x, y)
-                new_player = Player(x, y)
-    return new_player, x, y
+    return x, y
 
 
-test_p1 = Player(3, 3)
+opponent = Enemy(1, 1, 'enemy_left.png')
+test_p1 = Player(3, 3, 'character_right.png')
 
 if __name__ == '__main__':
     pygame.init()
-    player, level_x, level_y = generate_level(load_level('map.txt'))
+    level_x, level_y = generate_level(load_level('map.txt'))
+    keys = pygame.key.get_pressed()
 
-    while True:
+    while 1:
         for i in pygame.event.get():
             if i.type == pygame.QUIT:
                 sys.exit()
-            elif i.type == pygame.KEYDOWN:
-                if i.key == pygame.K_LEFT:
-                    # player.image = pygame.image.load('data/character_left.png').convert_alpha()
-                    test_p1.rect.x -= 3
 
-                elif i.key == pygame.K_RIGHT:
-                    # player.image = pygame.image.load('data/character_right.png').convert_alpha()
-                    test_p1.rect.x += 3
-
-                elif i.key == pygame.K_UP:
-                    test_p1.rect.y -= 3
-
-                elif i.key == pygame.K_DOWN:
-                    test_p1.rect.y += 3
+        if pygame.sprite.spritecollide(test_p1, mobs_group, True):
+            exit(0)
 
         tiles_group.draw(sc)
+        mobs_group.draw(sc)
         player_group.draw(sc)
         pygame.display.flip()
+        keys = pygame.key.get_pressed()
+
+        opponent.update()
+
+        if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:
+            test_p1.image = load_image('character_right.png')
+            test_p1.rect.y -= 3
+            test_p1.rect.x += 3
+
+        elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
+            test_p1.image = load_image('character_left.png')
+            test_p1.rect.y -= 3
+            test_p1.rect.x -= 3
+
+        elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
+            test_p1.image = load_image('character_right.png')
+            test_p1.rect.y += 3
+            test_p1.rect.x += 3
+
+        elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
+            test_p1.image = load_image('character_left.png')
+            test_p1.rect.y += 3
+            test_p1.rect.x -= 3
+
+        elif keys[pygame.K_LEFT]:
+            test_p1.image = load_image('character_left.png')
+            test_p1.rect.x -= 3
+
+        elif keys[pygame.K_RIGHT]:
+            test_p1.image = load_image('character_right.png')
+            test_p1.rect.x += 3
+
+        elif keys[pygame.K_DOWN]:
+            test_p1.rect.y += 3
+
+        elif keys[pygame.K_UP]:
+            test_p1.rect.y -= 3
 
         clock.tick(FPS)
