@@ -13,7 +13,11 @@ sc = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 score = 0
 
-version = '0.4.2'  # (вернул врага, сделал поворот и ходьбу по диагонали)
+version = '0.5.1'
+
+# 1. создал камеру для персоонажа
+# 2. расширил карту и сделал края
+# 3. подогнал все спрайты под ноаую карту
 
 
 def load_image(name, colorkey=None):
@@ -54,7 +58,9 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
-tile_images = {'wall': load_image('concrete_brick.png'), 'empty': load_image('concrete_brick_2.png')}
+tile_images = {'wall': load_image('concrete_brick.png'),
+               'empty': load_image('concrete_brick_2.png'),
+               'border': load_image('border.png')}
 
 tile_width = tile_height = 48
 
@@ -64,6 +70,23 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+
+
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - W // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - H // 2)
 
 
 class Player(pygame.sprite.Sprite):
@@ -84,14 +107,14 @@ class Enemy(pygame.sprite.Sprite):
             pass
         elif self.rect.x < test_p1.rect.x:
             self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
-            self.rect.x += 1
+            self.rect.x += 1.5
         else:
             self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
-            self.rect.x -= 1
+            self.rect.x -= 1.5
         if self.rect.y < test_p1.rect.y:
-            self.rect.y += 1
+            self.rect.y += 1.5
         else:
-            self.rect.y -= 1
+            self.rect.y -= 1.5
 
 
 class Exit(pygame.sprite.Sprite):
@@ -126,20 +149,20 @@ def generate_level(level):
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == '@':
-                Tile('empty', x, y)
+                Tile('border', x, y)
     return x, y
 
 
 # Создание монеток
 for i in range(5):
-    money = Coin(random.randint(20, 1000), random.randint(20, 700), 'money.png')
+    money = Coin(random.randint(630, 3650), random.randint(200, 1200), 'money.png')
 
-opponent = Enemy(1, 1, 'enemy_left.png')
-test_p1 = Player(3, 3, 'character_right.png')
-
+opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')
+test_p1 = Player(24, 14, 'character_right.png')
 
 # ТЕСТ
-exit_1 = Exit(8, 13.5, 'Exit_open_2.png')
+exit_1 = Exit(21, 28.98, 'Exit_open_2.png')
+camera = Camera()
 
 if __name__ == '__main__':
     pygame.init()
@@ -152,15 +175,19 @@ if __name__ == '__main__':
                 sys.exit()
 
         # Смерть главного персоонажа (разкоментить)
-        '''
         if pygame.sprite.spritecollide(test_p1, mobs_group, True):
             exit(0)
-        '''
+
         if pygame.sprite.spritecollide(test_p1, coin_group, True):
             score += 1
 
         if pygame.sprite.spritecollide(test_p1, exits_group, False) and score == 5:
             exit(0)
+
+        camera.update(test_p1)
+
+        for sprite in all_sprites:
+            camera.apply(sprite)
 
         tiles_group.draw(sc)
         coin_group.draw(sc)
