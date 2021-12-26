@@ -13,7 +13,7 @@ sc = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 score = 0
 
-version = '0.5.1'
+version = '0.5.2'
 
 # 1. создал камеру для персоонажа
 # 2. расширил карту и сделал края
@@ -103,18 +103,23 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
     def update(self):
-        if self.rect.x == test_p1.rect.x and self.rect.y != test_p1.rect.y:
+        if self.rect.x != test_p1.rect.x:
+            if self.rect.x < test_p1.rect.x:
+                self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
+                self.rect.x += 1.5
+            else:
+                self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
+                self.rect.x -= 1.5
+        else:
             pass
-        elif self.rect.x < test_p1.rect.x:
-            self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
-            self.rect.x += 1.5
+
+        if self.rect.y != test_p1.rect.y:
+            if self.rect.y < test_p1.rect.y:
+                self.rect.y += 1.5
+            else:
+                self.rect.y -= 1.5
         else:
-            self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
-            self.rect.x -= 1.5
-        if self.rect.y < test_p1.rect.y:
-            self.rect.y += 1.5
-        else:
-            self.rect.y -= 1.5
+            pass
 
 
 class Exit(pygame.sprite.Sprite):
