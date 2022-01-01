@@ -15,13 +15,15 @@ font_name = pygame.font.match_font('arial')  # шрифт "arial"
 
 tile_width = tile_height = 48  # размер одного блока карты
 
-# Положение относительно карты
+# ПОЛОЖЕНИЕ ОТНОСИТЕЛЬНО КАРТЫ
+
+# актуальное положение относительно карты
 x_map_player = 1  # игрок x
 y_map_player = 1  # игрок y
 
-x_map_opponent = 1  # противник x
-y_map_opponent = 1  # противник y
-
+# предыдущее положение относительно карты
+x_last = 1  # игрок x
+y_last = 1  # игрок y
 
 # ПАРАМЕТРЫ
 sc = pygame.display.set_mode((W, H))  # разсер окна
@@ -29,18 +31,11 @@ clock = pygame.time.Clock()  # какие-то часы (связанно с FPS
 score = 0  # счёт
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = 'BETA 0.6.0'  # версия
+version = 'BETA 0.6.3'  # версия
 # 1. Создал ящики на карте осуществляющие функцию препядствий
 # 2. Добавил взаимодействие сущностей и препядствий на карте (требует доработки)
-# 3. Незначительная оптимизация кода
-
-# TEST---TEST---TEST---TEST---TEST---TEST---TEST---TEST
-x_last = 1
-y_last = 1
-
-x_last_opponent = 1
-y_last_opponent = 1
-# TEST---TEST---TEST---TEST---TEST---TEST---TEST---TEST
+# 3. Создал механику подката для противника
+# 4. Незначительная оптимизация кода
 
 
 # ЗАГРУЗКА КАРТИНОК
@@ -85,6 +80,15 @@ def load_level(filename):
 tile_images = {'wall': load_image('concrete_brick.png'),
                'empty': load_image('concrete_brick_2.png'),
                'border': load_image('border.png')}
+
+
+# КОНЕЦ ИГРЫ
+def end_game():  # проверка: надо ли заканчивать игру
+    if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
+        exit(0)
+
+    if pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
+        exit(0)
 
 
 # ОБЪЕКТ ЕДИНИЧНАЯ ПЛИТКА
@@ -138,25 +142,62 @@ class Enemy(pygame.sprite.Sprite):
         self.x_map = 1
         self.y_map = 1
 
-    def update(self):
-        if self.rect.x != player.rect.x:
-            if self.rect.x < player.rect.x:
-                self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
-                # ПОЗИЦИЯ
-                self.x_map += 1.5  # относительно карты
-                self.rect.x += 1.5  # относительно окна игры
-            else:
-                self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
-                self.x_map -= 1.5  # относительно карты
-                self.rect.x -= 1.5  # относительно окна игры
+    def update(self):  # перемещение противника на карте
+        if self.rect.x not in range(player.rect.x - 2, player.rect.x + 2):
+            if pygame.sprite.spritecollide(opponent, obstacle_group, False):  # столкновение с ящиком: True
+                if self.rect.x < player.rect.x:
+                    # ИЗОБРАЖЕНИЕ
+                    self.image = pygame.image.load('data/enemy_right_tackle.png').convert_alpha()
 
-        if self.rect.y != player.rect.y:
-            if self.rect.y < player.rect.y:
-                self.y_map += 1.5  # относительно карты
-                self.rect.y += 1.5  # относительно окна игры
-            else:
-                self.y_map -= 1.5  # относительно карты
-                self.rect.y -= 1.5  # относительно окна игры
+                    # ПОЗИЦИЯ
+                    self.x_map += 3  # относительно карты
+                    self.rect.x += 3  # относительно окна игры
+                else:
+                    # ИЗОБРАЖЕНИЕ
+                    self.image = pygame.image.load('data/enemy_left_tackle.png').convert_alpha()
+
+                    # ПОЗИЦИЯ
+                    self.x_map -= 3  # относительно карты
+                    self.rect.x -= 3  # относительно окна игры
+            else:  # столкновение с ящиком: False
+                if self.rect.x < player.rect.x:
+                    # ИЗОБРАЖЕНИЕ
+                    self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
+
+                    # ПОЗИЦИЯ
+                    self.x_map += 2  # относительно карты
+                    self.rect.x += 2  # относительно окна игры
+                else:
+                    # ИЗОБРАЖЕНИЕ
+                    self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
+
+                    # ПОЗИЦИЯ
+                    self.x_map -= 2  # относительно карты
+                    self.rect.x -= 2  # относительно окна игры
+        else:
+            pass
+
+        if self.rect.y not in range(player.rect.y - 2, player.rect.y + 2):
+            if pygame.sprite.spritecollide(opponent, obstacle_group, False):  # столкновение с ящиком: True
+                if self.rect.y < player.rect.y:
+                    # ПОЗИЦИЯ
+                    self.y_map += 3  # относительно карты
+                    self.rect.y += 3  # относительно окна игры
+                else:
+                    # ПОЗИЦИЯ
+                    self.y_map -= 3  # относительно карты
+                    self.rect.y -= 3  # относительно окна игры
+            else:  # столкновение с ящиком: False
+                if self.rect.y < player.rect.y:
+                    # ПОЗИЦИЯ
+                    self.y_map += 2  # относительно карты
+                    self.rect.y += 2  # относительно окна игры
+                else:
+                    # ПОЗИЦИЯ
+                    self.y_map -= 2  # относительно карты
+                    self.rect.y -= 2  # относительно окна игры
+        else:
+            pass
 
 
 # ОБЪЕКТ ВЫХОД
@@ -167,7 +208,7 @@ class Exit(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
 
-# ОБЪЕКТ МОЕТА
+# ОБЪЕКТ МОНЕТА
 class Coin(pygame.sprite.Sprite):
     def __init__(self, x, y, filename):
         super().__init__(coin_group, all_sprites)
@@ -199,7 +240,7 @@ def generate_level(level):
     return x, y
 
 
-# СОЗДАНИЕ СПРАЙТОВ(ОБЪЕКТОВ)
+# СОЗДАНИЕ СПРАЙТОВ
 player = Player(30, 15, 'character_right.png')  # создание глвного героя
 opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
 exit_1 = Exit(21, 28.98, 'Exit_open_2.png')  # Выход 1
@@ -236,22 +277,11 @@ if __name__ == '__main__':
         x_last = x_map_player  # x персоонажа до столкновения
         y_last = y_map_player  # y персоонажа до столкновения
 
-        if pygame.sprite.spritecollide(opponent, obstacle_group, False):  # противник
-            opponent.rect.x += (x_last_opponent - opponent.x_map)
-            opponent.rect.y += (y_last_opponent - opponent.y_map)
-
-        x_last_opponent = opponent.x_map  # x врага до столкновения
-        y_last_opponent = opponent.y_map  # y врага до столкновения
-
         # ПРОВЕРКИ РАЗНЫХ СОБЫТИЙ ВНУТРИ ИГРЫ
-        if pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
-            exit(0)
-
         if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
             score += 1
 
-        if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
-            exit(0)
+        end_game()  # проверка окончания игры
 
         # ОБНОВЛЕНИЕ КАМЕРЫ
         camera.update(player)  # сама камера
@@ -260,12 +290,12 @@ if __name__ == '__main__':
             camera.apply(sprite)
 
         # ОТРИСОВАКА ВСЕХ СПРАЙТОВ НА ЭКРАНЕ
-        tiles_group.draw(sc)     # карта
+        tiles_group.draw(sc)  # карта
         obstacle_group.draw(sc)  # ящики
-        coin_group.draw(sc)      # монетки
-        exits_group.draw(sc)     # выходы
-        mobs_group.draw(sc)      # противник
-        player_group.draw(sc)    # игрок
+        coin_group.draw(sc)  # монетки
+        exits_group.draw(sc)  # выходы
+        mobs_group.draw(sc)  # противник
+        player_group.draw(sc)  # игрок
         draw_text(sc, str(score), 40, 950, 10)  # счёт
 
         # КАКИЕ-ТО ВАЖНЫЙ ШТУКИ
