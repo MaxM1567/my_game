@@ -15,23 +15,13 @@ font_name = pygame.font.match_font('arial')  # шрифт "arial"
 
 tile_width = tile_height = 48  # размер одного блока карты
 
-# ПОЛОЖЕНИЕ ОТНОСИТЕЛЬНО КАРТЫ
-
-# актуальное положение относительно карты
-x_map_player = 1  # игрок x
-y_map_player = 1  # игрок y
-
-# предыдущее положение относительно карты
-x_last = 1  # игрок x
-y_last = 1  # игрок y
-
 # ПАРАМЕТРЫ
 sc = pygame.display.set_mode((W, H))  # разсер окна
 clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
 score = 0  # счёт
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = 'BETA 0.6.3'  # версия
+version = 'BETA 0.6.4'  # версия
 # 1. Создал ящики на карте осуществляющие функцию препядствий
 # 2. Добавил взаимодействие сущностей и препядствий на карте (требует доработки)
 # 3. Создал механику подката для противника
@@ -80,6 +70,15 @@ def load_level(filename):
 tile_images = {'wall': load_image('concrete_brick.png'),
                'empty': load_image('concrete_brick_2.png'),
                'border': load_image('border.png')}
+
+
+def draw_sprite_group():
+    tiles_group.draw(sc)  # карта
+    obstacle_group.draw(sc)  # ящики
+    coin_group.draw(sc)  # монетки
+    exits_group.draw(sc)  # выходы
+    mobs_group.draw(sc)  # противник
+    player_group.draw(sc)  # игрок
 
 
 # КОНЕЦ ИГРЫ
@@ -131,6 +130,15 @@ class Player(pygame.sprite.Sprite):
         super().__init__(player_group, all_sprites)
         self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
+        # ПОЗИЦИЯ ОТНОСИТЕЛЬНА КАРТЫ
+
+        # актуальная
+        self.x_map_player = 1
+        self.y_map_player = 1
+
+        # предидущая
+        self.x_last = 1
+        self.y_last = 1
 
 
 # ОБЪЕКТ ПРОТИВНИК
@@ -139,8 +147,9 @@ class Enemy(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, mobs_group, all_sprites)
         self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
-        self.x_map = 1
-        self.y_map = 1
+        # ПОЗИЦИЯ ОТНОСИТЕЛЬНА КАРТЫ
+        self.x_map_enemy = 1
+        self.y_map_enemy = 1
 
     def update(self):  # перемещение противника на карте
         if self.rect.x not in range(player.rect.x - 2, player.rect.x + 2):
@@ -150,14 +159,14 @@ class Enemy(pygame.sprite.Sprite):
                     self.image = pygame.image.load('data/enemy_right_tackle.png').convert_alpha()
 
                     # ПОЗИЦИЯ
-                    self.x_map += 3  # относительно карты
+                    self.x_map_enemy += 3  # относительно карты
                     self.rect.x += 3  # относительно окна игры
                 else:
                     # ИЗОБРАЖЕНИЕ
                     self.image = pygame.image.load('data/enemy_left_tackle.png').convert_alpha()
 
                     # ПОЗИЦИЯ
-                    self.x_map -= 3  # относительно карты
+                    self.x_map_enemy -= 3  # относительно карты
                     self.rect.x -= 3  # относительно окна игры
             else:  # столкновение с ящиком: False
                 if self.rect.x < player.rect.x:
@@ -165,14 +174,14 @@ class Enemy(pygame.sprite.Sprite):
                     self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
 
                     # ПОЗИЦИЯ
-                    self.x_map += 2  # относительно карты
+                    self.x_map_enemy += 2  # относительно карты
                     self.rect.x += 2  # относительно окна игры
                 else:
                     # ИЗОБРАЖЕНИЕ
                     self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
 
                     # ПОЗИЦИЯ
-                    self.x_map -= 2  # относительно карты
+                    self.x_map_enemy -= 2  # относительно карты
                     self.rect.x -= 2  # относительно окна игры
         else:
             pass
@@ -181,20 +190,20 @@ class Enemy(pygame.sprite.Sprite):
             if pygame.sprite.spritecollide(opponent, obstacle_group, False):  # столкновение с ящиком: True
                 if self.rect.y < player.rect.y:
                     # ПОЗИЦИЯ
-                    self.y_map += 3  # относительно карты
+                    self.y_map_enemy += 3  # относительно карты
                     self.rect.y += 3  # относительно окна игры
                 else:
                     # ПОЗИЦИЯ
-                    self.y_map -= 3  # относительно карты
+                    self.y_map_enemy -= 3  # относительно карты
                     self.rect.y -= 3  # относительно окна игры
             else:  # столкновение с ящиком: False
                 if self.rect.y < player.rect.y:
                     # ПОЗИЦИЯ
-                    self.y_map += 2  # относительно карты
+                    self.y_map_enemy += 2  # относительно карты
                     self.rect.y += 2  # относительно окна игры
                 else:
                     # ПОЗИЦИЯ
-                    self.y_map -= 2  # относительно карты
+                    self.y_map_enemy -= 2  # относительно карты
                     self.rect.y -= 2  # относительно окна игры
         else:
             pass
@@ -271,11 +280,11 @@ if __name__ == '__main__':
 
         # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
         if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
-            player.rect.x += (x_last - x_map_player)
-            player.rect.y += (y_last - y_map_player)
+            player.rect.x += (player.x_last - player.x_map_player)
+            player.rect.y += (player.y_last - player.y_map_player)
 
-        x_last = x_map_player  # x персоонажа до столкновения
-        y_last = y_map_player  # y персоонажа до столкновения
+        player.x_last = player.x_map_player  # x персоонажа до столкновения
+        player.y_last = player.y_map_player  # y персоонажа до столкновения
 
         # ПРОВЕРКИ РАЗНЫХ СОБЫТИЙ ВНУТРИ ИГРЫ
         if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
@@ -290,12 +299,7 @@ if __name__ == '__main__':
             camera.apply(sprite)
 
         # ОТРИСОВАКА ВСЕХ СПРАЙТОВ НА ЭКРАНЕ
-        tiles_group.draw(sc)  # карта
-        obstacle_group.draw(sc)  # ящики
-        coin_group.draw(sc)  # монетки
-        exits_group.draw(sc)  # выходы
-        mobs_group.draw(sc)  # противник
-        player_group.draw(sc)  # игрок
+        draw_sprite_group()
         draw_text(sc, str(score), 40, 950, 10)  # счёт
 
         # КАКИЕ-ТО ВАЖНЫЙ ШТУКИ
@@ -308,8 +312,8 @@ if __name__ == '__main__':
         if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:  # игрок
             player.image = load_image('character_right.png')
 
-            y_map_player -= 3
-            x_map_player += 3
+            player.y_map_player -= 3
+            player.x_map_player += 3
 
             player.rect.y -= 3
             player.rect.x += 3
@@ -317,8 +321,8 @@ if __name__ == '__main__':
         elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
             player.image = load_image('character_left.png')
 
-            y_map_player -= 3
-            x_map_player -= 3
+            player.y_map_player -= 3
+            player.x_map_player -= 3
 
             player.rect.y -= 3
             player.rect.x -= 3
@@ -326,8 +330,8 @@ if __name__ == '__main__':
         elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
             player.image = load_image('character_right.png')
 
-            y_map_player += 3
-            x_map_player += 3
+            player.y_map_player += 3
+            player.x_map_player += 3
 
             player.rect.y += 3
             player.rect.x += 3
@@ -335,28 +339,28 @@ if __name__ == '__main__':
         elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
             player.image = load_image('character_left.png')
 
-            y_map_player += 3
-            x_map_player -= 3
+            player.y_map_player += 3
+            player.x_map_player -= 3
 
             player.rect.y += 3
             player.rect.x -= 3
 
         elif keys[pygame.K_LEFT]:
             player.image = load_image('character_left.png')
-            x_map_player -= 3
+            player.x_map_player -= 3
             player.rect.x -= 3
 
         elif keys[pygame.K_RIGHT]:
             player.image = load_image('character_right.png')
-            x_map_player += 3
+            player.x_map_player += 3
             player.rect.x += 3
 
         elif keys[pygame.K_DOWN]:
-            y_map_player += 3
+            player.y_map_player += 3
             player.rect.y += 3
 
         elif keys[pygame.K_UP]:
-            y_map_player -= 3
+            player.y_map_player -= 3
             player.rect.y -= 3
 
         clock.tick(FPS)  # опять часы
