@@ -2,14 +2,17 @@ import random
 import pygame
 import os
 import sys
+import time
+import datetime
 
 # КОНСТАНТЫ
 FPS = 60  # fps
 W = 1000  # ширина экрана
 H = 700  # высота экрана
 
-WHITE = (255, 255, 255)  # белый цыет
-GREEN = (25, 225, 25)  # зелёный цыет
+WHITE = (255, 255, 255)  # белый цвет
+GREEN = (25, 225, 25)  # зелёный цвет
+BLACK = (0, 0, 0)  # чёрный цвет
 
 font_name = pygame.font.match_font('arial')  # шрифт "arial"
 
@@ -19,13 +22,16 @@ tile_width = tile_height = 48  # размер одного блока карты
 sc = pygame.display.set_mode((W, H))  # разсер окна
 clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
 score = 0  # счёт
+counter_interface = 0  # счётчик интерфейса
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = 'BETA 0.6.4'  # версия
+version = '0.6.5'  # версия
 # 1. Создал ящики на карте осуществляющие функцию препядствий
-# 2. Добавил взаимодействие сущностей и препядствий на карте (требует доработки)
-# 3. Создал механику подката для противника
-# 4. Незначительная оптимизация кода
+# 2. Добавил взаимодействие сущностей и препядствий на карте (почти не требует доработки)
+# 3. Создал механику перепрыгивания ящиков противником
+# 4. Добавил возможность настраивать интерфейс
+# 5. Добавил таймер игры (доработать)
+# 6. Незначительная оптимизация кода
 
 
 # ЗАГРУЗКА КАРТИНОК
@@ -43,10 +49,19 @@ def load_image(name):
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
     if text == '5':
-        text_surface = font.render('ВЫХОД ОТКРЫТ', True, GREEN)
-        x -= 100
+        text_surface = font.render('EXIT ON', True, WHITE)
+        x -= 26
     else:
         text_surface = font.render(text + '/5', True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
+
+# РИМОВАЛКА ТАЙМЕРА
+def draw_seconds(surf, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, WHITE)
     text_rect = text_surface.get_rect()
     text_rect.midtop = (x, y)
     surf.blit(text_surface, text_rect)
@@ -70,6 +85,24 @@ def load_level(filename):
 tile_images = {'wall': load_image('concrete_brick.png'),
                'empty': load_image('concrete_brick_2.png'),
                'border': load_image('border.png')}
+
+
+# ОТОБРАЖЕНИЕ ИНТЕРФЕЙСА
+def display_interface(k):
+    if k % 3 == 0:
+        # РИСОВКА ТАЙМЕРА
+        pygame.draw.rect(sc, BLACK, (850, 0, 950, 40))
+        draw_seconds(sc, 'time: ' + f'{datetime.datetime.min.minute}:{datetime.datetime.now().second}', 30, 922, 2)
+
+        # РИСОВКА СЧЁТА
+        pygame.draw.rect(sc, GREEN, (850, 40, 950, 60))
+        draw_text(sc, str(score), 40, 950, 50)
+
+    if k % 3 == 1:
+        draw_text(sc, str(score), 40, 950, 10)  # счёт
+
+    if k % 3 == 2:
+        pass
 
 
 def draw_sprite_group():
@@ -250,22 +283,34 @@ def generate_level(level):
 
 
 # СОЗДАНИЕ СПРАЙТОВ
+for i in range(5):  # генерация монеток
+    money = Coin(random.randint(630, 3650), random.randint(200, 1200), 'money.png')
+
+for i in range(16):  # генерация ящиков
+    obstacle = Obstacle(random.randint(14, 80), random.randint(8, 25), 'obstacle_2.png')
+
 player = Player(30, 15, 'character_right.png')  # создание глвного героя
+if pygame.sprite.spritecollide(player, obstacle_group, False):
+    while pygame.sprite.spritecollide(player, obstacle_group, False):
+        print(player.rect.x, player.rect.y)
+        print('ПОМЕНЯЛ НА:')
+        new_x = random.randint(100, 500)
+        new_y = random.randint(100, 300)
+        print(new_x, new_y)
+        player.rect.x += new_x
+        player.rect.y += new_y
+
 opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
 exit_1 = Exit(21, 28.98, 'Exit_open_2.png')  # Выход 1
 camera = Camera()  # создал камеру
 
-for i in range(5):  # генерация монеток
-    money = Coin(random.randint(630, 3650), random.randint(200, 1200), 'money.png')
-
-for i in range(15):  # генерация ящиков
-    obstacle = Obstacle(random.randint(14, 80), random.randint(8, 25), 'obstacle_2.png')
 
 # НАЧАЛО ПРОГРАММЫ
 if __name__ == '__main__':
     pygame.init()
     level_x, level_y = generate_level(load_level('map.txt'))
     keys = pygame.key.get_pressed()
+    start_time = time.time()
 
     # МУЗЫКА
     # pygame.mixer.music.load('data/music.mp3')  # музыка
@@ -274,9 +319,12 @@ if __name__ == '__main__':
     # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
     while True:
         # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
-        for i in pygame.event.get():
-            if i.type == pygame.QUIT:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_o:  # вид интерфейса
+                    counter_interface += 1
 
         # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
         if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
@@ -299,8 +347,8 @@ if __name__ == '__main__':
             camera.apply(sprite)
 
         # ОТРИСОВАКА ВСЕХ СПРАЙТОВ НА ЭКРАНЕ
-        draw_sprite_group()
-        draw_text(sc, str(score), 40, 950, 10)  # счёт
+        draw_sprite_group()  # отрисовка спрайтов
+        display_interface(counter_interface)  # отрисовка интерфейса
 
         # КАКИЕ-ТО ВАЖНЫЙ ШТУКИ
         pygame.display.flip()  # флип
