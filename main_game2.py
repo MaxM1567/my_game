@@ -25,13 +25,12 @@ score = 0  # счёт
 counter_interface = 0  # счётчик интерфейса
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = '0.6.5 '  # версия
-# 1. Создал ящики на карте осуществляющие функцию препядствий
-# 2. Добавил взаимодействие сущностей и препядствий на карте (почти не требует доработки)
-# 3. Создал механику перепрыгивания ящиков противником
-# 4. Добавил возможность настраивать интерфейс
-# 5. Добавил таймер игры (доработать)
-# 6. Незначительная оптимизация кода
+version = '0.7.0 '  # версия
+# 1. Расширил карту (подогнал спавн ящиков и монет)
+# 2. Создал стены (картинки)
+# 3. Создал граници карты (ограничения персоонажа)
+# 4. Не доделал доделал таймер(
+# 5. Создал красивый выход
 
 
 # ЗАГРУЗКА КАРТИНОК
@@ -107,8 +106,11 @@ def display_interface(k):
 
 def draw_sprite_group():
     tiles_group.draw(sc)  # карта
+    wall_border_group.draw(sc)  # граници стен
+    wall_group.draw(sc)  # стены
     obstacle_group.draw(sc)  # ящики
     coin_group.draw(sc)  # монетки
+    picture_group.draw(sc)  # картинки
     exits_group.draw(sc)  # выходы
     mobs_group.draw(sc)  # противник
     player_group.draw(sc)  # игрок
@@ -120,7 +122,32 @@ def end_game():  # проверка: надо ли заканчивать игр
         exit(0)
 
     if pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
-        exit(0)
+        pass
+        # exit(0)
+
+
+# ОБЪЕКТ ГРАНИЦА СТНЕЫ
+class Wall_border(pygame.sprite.Sprite):
+    def __init__(self, x, y, filename):
+        super().__init__(wall_border_group, all_sprites)
+        self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+        self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
+
+
+# ОБЪЕКТ КАРТИНКА
+class Picture(pygame.sprite.Sprite):
+    def __init__(self, x, y, filename):
+        super().__init__(picture_group, all_sprites)
+        self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+        self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
+
+
+# ОБЪЕКТ СТЕНА
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, x, y, filename):
+        super().__init__(wall_group, all_sprites)
+        self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+        self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
 
 # ОБЪЕКТ ЕДИНИЧНАЯ ПЛИТКА
@@ -259,6 +286,9 @@ class Coin(pygame.sprite.Sprite):
 
 
 # ГРУППЫ СПРАЙТОВ
+picture_group = pygame.sprite.Group()  # picture
+wall_border_group = pygame.sprite.Group()
+wall_group = pygame.sprite.Group()  # wall
 exits_group = pygame.sprite.Group()  # exit
 coin_group = pygame.sprite.Group()  # coin
 mobs_group = pygame.sprite.Group()  # mobs
@@ -283,25 +313,40 @@ def generate_level(level):
 
 
 # СОЗДАНИЕ СПРАЙТОВ
+wall_top = Wall(12.7, 0.9, 'wall_top_2.png')  # верхняя стена
+exit_door_border = Wall_border(12.7, 3, 'wall_top_border.png')  # граница верхней стены
+
+wall_right = Wall_border(11.7, 0.9, 'wall_right.png')  # правая стена
+wall_left = Wall_border(90.7, 0.9, 'wall_right.png')  # левая стена
+wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
+
 for i in range(5):  # генерация монеток
-    money = Coin(random.randint(630, 3650), random.randint(200, 1200), 'money.png')
+    money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
 
-for i in range(16):  # генерация ящиков
-    obstacle = Obstacle(random.randint(14, 80), random.randint(8, 25), 'obstacle_2.png')
+for i in range(40):  # генерация ящиков
+    n = random.randint(1, 3)
+    if n == 1:
+        obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2_2.png')
+    else:
+        obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2.png')
 
-player = Player(30, 15, 'character_right.png')  # создание глвного героя
-if pygame.sprite.spritecollide(player, obstacle_group, False):
+player = Player(30, 15, 'character_right.png')  # создание главного героя
+if pygame.sprite.spritecollide(player, obstacle_group, False):  # заспавнился ли игрок в ящике
     while pygame.sprite.spritecollide(player, obstacle_group, False):
-        print(player.rect.x, player.rect.y)
-        print('ПОМЕНЯЛ НА:')
-        new_x = random.randint(100, 500)
-        new_y = random.randint(100, 300)
-        print(new_x, new_y)
+        new_x = random.randint(100, 500)  # новый x
+        new_y = random.randint(100, 300)  # новый y
+
         player.rect.x += new_x
         player.rect.y += new_y
 
 opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
-exit_1 = Exit(21, 28.98, 'Exit_open_2.png')  # Выход 1
+
+# exit_1 = Exit(random.randint(15, 85), 48.98, 'Exit_open_2.png')  # выход 1 (пока не работает)
+
+x_exit = random.randint(15, 85)  # x выхода 2
+exit_2 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 2
+exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 2
+
 camera = Camera()  # создал камеру
 
 
@@ -325,8 +370,14 @@ if __name__ == '__main__':
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_o:  # вид интерфейса
                     counter_interface += 1
+                elif event.key == pygame.K_h:
+                    score = 5
 
         # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
+        if pygame.sprite.spritecollide(player, wall_border_group, False):  # персоонаж
+            player.rect.x += (player.x_last - player.x_map_player)
+            player.rect.y += (player.y_last - player.y_map_player)
+
         if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
             player.rect.x += (player.x_last - player.x_map_player)
             player.rect.y += (player.y_last - player.y_map_player)
