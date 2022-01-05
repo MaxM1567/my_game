@@ -26,12 +26,13 @@ counter_interface = 0  # счётчик интерфейса
 side_character = 'r'
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = '0.8.0 '  # версия
+version = '0.8.1 '  # версия
 
 # 1. Добалена анимация ходьбы персоонажа
 # 2. Добалена анимация ходьбы противника
 # 3. Незначительная оптимизация
-# 4. Не доделал доделал таймер(
+# 4. Добавлено сохранение результатов игр в .txt
+# 5. Не доделал доделал таймер(
 
 
 # ЗАГРУЗКА КАРТИНОК
@@ -120,11 +121,30 @@ def draw_sprite_group():
 # КОНЕЦ ИГРЫ
 def end_game():  # проверка: надо ли заканчивать игру
     if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
+        f = open('data/result.txt', 'r')
+        text = f.read()
+        f.close()
+
+        os.remove('data/result.txt')
+
+        f = open('data/result.txt', 'w')
+        f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Win\n{text}')
+        f.close()
+
         exit(0)
 
-    if pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
-        pass
-        # exit(0)
+    elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
+        f = open('data/result.txt', 'r')
+        text = f.read()
+        f.close()
+
+        os.remove('data/result.txt')
+
+        f = open('data/result.txt', 'w')
+        f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Fail\n{text}')
+        f.close()
+
+        exit(0)
 
 
 # ОБЪЕКТ ГРАНИЦА СТНЕЫ
@@ -409,6 +429,10 @@ if __name__ == '__main__':
                     score = 5
 
         # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
+        if pygame.sprite.spritecollide(player, wall_border_group, False):  # персоонаж
+            player.rect.x += (player.x_last - player.x_map_player)
+            player.rect.y += (player.y_last - player.y_map_player)
+
         if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
             player.rect.x += (player.x_last - player.x_map_player)
             player.rect.y += (player.y_last - player.y_map_player)
