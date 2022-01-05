@@ -23,14 +23,15 @@ sc = pygame.display.set_mode((W, H))  # разсер окна
 clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
 score = 0  # счёт
 counter_interface = 0  # счётчик интерфейса
+side_character = 'r'
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = '0.7.0 '  # версия
-# 1. Расширил карту (подогнал спавн ящиков и монет)
-# 2. Создал стены (картинки)
-# 3. Создал граници карты (ограничения персоонажа)
+version = '0.8.0 '  # версия
+
+# 1. Добалена анимация ходьбы персоонажа
+# 2. Добалена анимация ходьбы противника
+# 3. Незначительная оптимизация
 # 4. Не доделал доделал таймер(
-# 5. Создал красивый выход
 
 
 # ЗАГРУЗКА КАРТИНОК
@@ -211,6 +212,15 @@ class Enemy(pygame.sprite.Sprite):
         self.x_map_enemy = 1
         self.y_map_enemy = 1
 
+    def animation(self):  # анимация ходьбы
+        if not pygame.sprite.spritecollide(opponent, obstacle_group, False):  # не столкнулся ли с ящиком
+            if self.rect.x < player.rect.x:  # если цель справа
+                self.image = walk_right_enemy[animation_enemy % quantity_images_enemy]
+            elif self.rect.x > player.rect.x:  # если цель слева
+                self.image = walk_left_enemy[animation_enemy % quantity_images_enemy]
+            else:
+                pass
+
     def update(self):  # перемещение противника на карте
         if self.rect.x not in range(player.rect.x - 2, player.rect.x + 2):
             if pygame.sprite.spritecollide(opponent, obstacle_group, False):  # столкновение с ящиком: True
@@ -323,7 +333,7 @@ wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
 for i in range(5):  # генерация монеток
     money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
 
-for i in range(40):  # генерация ящиков
+for i in range(50):  # генерация ящиков
     n = random.randint(1, 3)
     if n == 1:
         obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2_2.png')
@@ -349,12 +359,37 @@ exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 2
 
 camera = Camera()  # создал камеру
 
-
 # НАЧАЛО ПРОГРАММЫ
 if __name__ == '__main__':
     pygame.init()
     level_x, level_y = generate_level(load_level('map.txt'))
     keys = pygame.key.get_pressed()
+
+    # ПАРАМЕТРЫ АНИМАЦИИ ПЕРСООНАЖЕЙ
+
+    # персоонаж
+    quantity_images = 4  # количество картинок
+    count = 0  # ход анимации
+    animation = 0  # номер картинки в анимации
+    speed_animation = 6  # скорость обновления картинок (чем больше тем медленнее)
+
+    walk_right = [pygame.transform.scale(pygame.image.load(f'data/walk/character_walk_{i}.png'),
+                                         (76, 86)) for i in range(quantity_images)]  # список картинок
+
+    walk_left = [pygame.transform.flip(walk_right[i], True, False) for i in range(quantity_images)]
+
+    # противник
+    quantity_images_enemy = 4  # количество картинок
+    count_enemy = 0  # ход анимации
+    animation_enemy = 0  # номер картинки в анимации
+    speed_animation_enemy = 10  # скорость обновления картинок (чем больше тем медленнее)
+
+    walk_right_enemy = [pygame.transform.scale(pygame.image.load(f'data/walk_enemy/enemy_walk_{i}.png'),
+                                               (76, 86)) for i in range(quantity_images_enemy)]  # список картинок
+
+    walk_left_enemy = [pygame.transform.flip(walk_right_enemy[i], True, False) for i in range(quantity_images_enemy)]
+
+    # НАЧАЛО ВРЕМЕНИ
     start_time = time.time()
 
     # МУЗЫКА
@@ -370,14 +405,10 @@ if __name__ == '__main__':
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_o:  # вид интерфейса
                     counter_interface += 1
-                elif event.key == pygame.K_h:
+                elif event.key == pygame.K_h:  # помощь
                     score = 5
 
         # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
-        if pygame.sprite.spritecollide(player, wall_border_group, False):  # персоонаж
-            player.rect.x += (player.x_last - player.x_map_player)
-            player.rect.y += (player.y_last - player.y_map_player)
-
         if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
             player.rect.x += (player.x_last - player.x_map_player)
             player.rect.y += (player.y_last - player.y_map_player)
@@ -408,35 +439,60 @@ if __name__ == '__main__':
         # ПЕРЕМЕЩЕНИЕ СУЩНОСТЕЙ
         opponent.update()  # враг
 
+        opponent.animation()
+        if count_enemy == speed_animation_enemy:
+            animation_enemy += 1
+            count_enemy = 0
+        count_enemy += 1
+
         if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:  # игрок
-            player.image = load_image('character_right.png')
+            side_character = 'r'
+            player.image = walk_right[animation % quantity_images]
 
             player.y_map_player -= 3
             player.x_map_player += 3
 
             player.rect.y -= 3
             player.rect.x += 3
+
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
 
         elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
-            player.image = load_image('character_left.png')
+            side_character = 'l'
+            player.image = walk_left[animation % quantity_images]
 
             player.y_map_player -= 3
             player.x_map_player -= 3
 
             player.rect.y -= 3
             player.rect.x -= 3
+
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
 
         elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
-            player.image = load_image('character_right.png')
+            side_character = 'r'
+            player.image = walk_right[animation % quantity_images]
 
             player.y_map_player += 3
             player.x_map_player += 3
 
             player.rect.y += 3
             player.rect.x += 3
+
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
 
         elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
-            player.image = load_image('character_left.png')
+            side_character = 'l'
+            player.image = walk_left[animation % quantity_images]
 
             player.y_map_player += 3
             player.x_map_player -= 3
@@ -444,22 +500,67 @@ if __name__ == '__main__':
             player.rect.y += 3
             player.rect.x -= 3
 
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
+
         elif keys[pygame.K_LEFT]:
-            player.image = load_image('character_left.png')
+            side_character = 'l'
+            player.image = walk_left[animation % quantity_images]
+
             player.x_map_player -= 3
             player.rect.x -= 3
 
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
+
         elif keys[pygame.K_RIGHT]:
-            player.image = load_image('character_right.png')
+            side_character = 'r'
+            player.image = walk_right[animation % quantity_images]
+
             player.x_map_player += 3
             player.rect.x += 3
 
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
+
         elif keys[pygame.K_DOWN]:
+            if side_character == 'r':
+                player.image = walk_right[animation % quantity_images]
+            else:
+                player.image = walk_left[animation % quantity_images]
+
             player.y_map_player += 3
             player.rect.y += 3
 
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
+
         elif keys[pygame.K_UP]:
+            if side_character == 'r':
+                player.image = walk_right[animation % quantity_images]
+            else:
+                player.image = walk_left[animation % quantity_images]
+
             player.y_map_player -= 3
             player.rect.y -= 3
+
+            if count == speed_animation:
+                animation += 1
+                count = 0
+            count += 1
+
+        else:
+            if side_character == 'r':
+                player.image = walk_right[0]
+            else:
+                player.image = walk_left[0]
 
         clock.tick(FPS)  # опять часы
