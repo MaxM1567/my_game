@@ -29,11 +29,12 @@ while True:
     initial_time = datetime.datetime.now()  # время начала игры
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.0.1 '  # версия
+    version = '0.9.7 '  # версия
 
-    # 1. Добавлено отображение управления
-    # 2. Незначительная оптимизация кода
-    # 3. Не доделал доделал таймер(
+    # Рабочие фотки с функционалом
+    # Монетки не создаются в ящиках (возможен сбой, но они все равно должны забираться)
+    # Исправлен секундомер с переводом секунд в минуты
+    # нажатие "-" ставит музыку на паузу (нажатие "=/+" продолжает музыку)
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -83,7 +84,13 @@ while True:
         if k % 3 == 0:
             # РИСОВКА ТАЙМЕРА
             pygame.draw.rect(sc, BLACK, (850, 0, 950, 40))
-            draw_seconds(sc, 'time: ' + f'{datetime.datetime.min.minute}:{datetime.datetime.now().second}', 30, 922, 2)
+            
+            # РАСЧЁТ ВРЕМЕНИ
+            seconds = (datetime.datetime.now() - start_time).seconds
+            minutes = seconds // 60
+            seconds = seconds - minutes * 60
+
+            draw_seconds(sc, 'time: ' + f'{minutes}:{seconds}', 30, 922, 2)
 
             # РИСОВКА СЧЁТА
             pygame.draw.rect(sc, GREEN, (850, 40, 950, 60))
@@ -129,9 +136,7 @@ while True:
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
-
             os.remove('data/result.txt')
-
             f = open('data/result.txt', 'w')
             f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Fail\n{text}')
             f.close()
@@ -457,7 +462,10 @@ while True:
     wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
 
     for i in range(5):  # генерация монеток
+        # федор сделал нормальный спавн монет
         money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
+        while pygame.sprite.spritecollide(money, obstacle_group, True):
+            money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
 
     for i in range(50):  # генерация ящиков
         n = random.randint(1, 3)
@@ -517,11 +525,12 @@ while True:
                            for i in range(quantity_images_enemy)]
 
         # НАЧАЛО ВРЕМЕНИ
-        start_time = time.time()
+        start_time = datetime.datetime.now()
 
         # МУЗЫКА
-        # pygame.mixer.music.load('data/music.mp3')  # музыка
-        # pygame.mixer.music.play()
+        pygame.mixer.music.load('data/music.mp3')  # музыка
+        pygame.mixer.music.play()
+        pygame.mixer.music.set_volume(15)
 
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
@@ -533,7 +542,11 @@ while True:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_o:  # вид интерфейса
                         counter_interface += 1
-                    elif event.key == pygame.K_h:  # помощь
+                    if event.key == pygame.K_MINUS:  # нажатие "-" ставит музыку на паузу
+                        pygame.mixer.music.pause()
+                    if event.key == pygame.K_EQUALS:  # нажатие "=" продолжает играть музыка
+                        pygame.mixer.music.unpause()
+                    if event.key == pygame.K_h:  # помощь
                         score = 5
 
             # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
