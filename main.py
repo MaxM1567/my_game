@@ -14,6 +14,8 @@ clock = pygame.time.Clock()
 version = '0.3.1'
 
 
+# 06.11
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
