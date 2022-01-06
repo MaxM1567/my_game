@@ -2,7 +2,6 @@ import random
 import pygame
 import os
 import sys
-import time
 import datetime
 
 while True:
@@ -29,11 +28,10 @@ while True:
     initial_time = datetime.datetime.now()  # время начала игры
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.0.1 '  # версия
+    version = '1.0.2 '  # версия
 
-    # 1. Добавлено отображение управления
+    # 1. На экране окончания время показывается точнее
     # 2. Незначительная оптимизация кода
-    # 3. Не доделал доделал таймер(
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -83,7 +81,13 @@ while True:
         if k % 3 == 0:
             # РИСОВКА ТАЙМЕРА
             pygame.draw.rect(sc, BLACK, (850, 0, 950, 40))
-            draw_seconds(sc, 'time: ' + f'{datetime.datetime.min.minute}:{datetime.datetime.now().second}', 30, 922, 2)
+
+            # РАСЧЁТ ВРЕМЕНИ
+            seconds = (datetime.datetime.now() - start_time).seconds
+            minutes = seconds // 60
+            seconds = seconds - minutes * 60
+
+            draw_seconds(sc, 'time: ' + f'{minutes}:{seconds}', 30, 922, 2)
 
             # РИСОВКА СЧЁТА
             pygame.draw.rect(sc, GREEN, (850, 40, 950, 60))
@@ -129,11 +133,11 @@ while True:
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
-
             os.remove('data/result.txt')
-
             f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Fail\n{text}')
+            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                    f'/{score}/Fail\n{text}')
+
             f.close()
 
             show_end_menu(0)
@@ -458,6 +462,8 @@ while True:
 
     for i in range(5):  # генерация монеток
         money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
+        while pygame.sprite.spritecollide(money, obstacle_group, True):
+            money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
 
     for i in range(50):  # генерация ящиков
         n = random.randint(1, 3)
@@ -477,11 +483,9 @@ while True:
 
     opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
 
-    # exit_1 = Exit(random.randint(15, 85), 48.98, 'Exit_open_2.png')  # выход 1 (пока не работает)
-
-    x_exit = random.randint(15, 85)  # x выхода 2
-    exit_2 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 2
-    exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 2
+    x_exit = random.randint(15, 85)  # x выхода 1
+    exit_1 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
+    exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 1
 
     camera = Camera()  # создал камеру
 
@@ -517,11 +521,12 @@ while True:
                            for i in range(quantity_images_enemy)]
 
         # НАЧАЛО ВРЕМЕНИ
-        start_time = time.time()
+        start_time = datetime.datetime.now()
 
         # МУЗЫКА
-        # pygame.mixer.music.load('data/music.mp3')  # музыка
-        # pygame.mixer.music.play()
+        pygame.mixer.music.load('data/music.mp3')  # музыка
+        pygame.mixer.music.play()
+        pygame.mixer.music.set_volume(15)
 
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
@@ -533,7 +538,11 @@ while True:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_o:  # вид интерфейса
                         counter_interface += 1
-                    elif event.key == pygame.K_h:  # помощь
+                    if event.key == pygame.K_MINUS:  # нажатие "-" ставит музыку на паузу
+                        pygame.mixer.music.pause()
+                    if event.key == pygame.K_EQUALS:  # нажатие "=" продолжает играть музыка
+                        pygame.mixer.music.unpause()
+                    if event.key == pygame.K_h:  # помощь
                         score = 5
 
             # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
