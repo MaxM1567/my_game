@@ -24,14 +24,16 @@ clock = pygame.time.Clock()  # какие-то часы (связанно с FPS
 score = 0  # счёт
 counter_interface = 0  # счётчик интерфейса
 side_character = 'r'
+tile_images = {}  # список плиток для карты
+initial_time = datetime.datetime.now()  # время начала игры
 
 # ВЕРСИЯ ПРОГРАММЫ
-version = '0.8.1 '  # версия
+version = '0.9.0 '  # версия
 
-# 1. Добалена анимация ходьбы персоонажа
-# 2. Добалена анимация ходьбы противника
-# 3. Незначительная оптимизация
-# 4. Добавлено сохранение результатов игр в .txt
+# 1. Добален начальный интерфейс
+# 2. Добален экран окончания
+# 3. Добавлен подсчёт результатов
+# 4. Незначительная оптимизация кода
 # 5. Не доделал доделал таймер(
 
 
@@ -82,12 +84,6 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '@'), level_map))
 
 
-# СПИСОК КАРТИНОК ДЛЯ ОТРИСОВКИ УРОВНЯ
-tile_images = {'wall': load_image('concrete_brick.png'),
-               'empty': load_image('concrete_brick_2.png'),
-               'border': load_image('border.png')}
-
-
 # ОТОБРАЖЕНИЕ ИНТЕРФЕЙСА
 def display_interface(k):
     if k % 3 == 0:
@@ -131,7 +127,7 @@ def end_game():  # проверка: надо ли заканчивать игр
         f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Win\n{text}')
         f.close()
 
-        exit(0)
+        show_end_menu(1)
 
     elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
         f = open('data/result.txt', 'r')
@@ -144,7 +140,131 @@ def end_game():  # проверка: надо ли заканчивать игр
         f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Fail\n{text}')
         f.close()
 
-        exit(0)
+        show_end_menu(0)
+
+
+# ГЛАВНОЕ МЕНЮ
+def show_menu():
+    show = True
+    image = pygame.image.load('data/start_menu/main_menu_test.png')
+    rect = image.get_rect(bottomright=(W, H))
+    sc.blit(image, rect)
+
+    pygame.display.update()
+
+    global tile_images
+
+    while show:
+        for event_1 in pygame.event.get():
+            # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+            if event_1.type == pygame.QUIT:
+                sys.exit()
+            if event_1.type == pygame.KEYDOWN:
+                if event_1.key == pygame.K_s:  # меню старт
+
+                    image = pygame.image.load('data/start_menu/main_menu_levels.png')
+                    rect = image.get_rect(bottomright=(W, H))
+                    sc.blit(image, rect)
+                    pygame.display.update()
+
+                    show_1 = True
+
+                    while show_1:
+                        for event_2 in pygame.event.get():
+                            # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+                            if event_2.type == pygame.QUIT:
+                                sys.exit()
+                            if event_2.type == pygame.KEYDOWN:
+                                if event_2.key == pygame.K_1:
+                                    tile_images = {'wall': load_image('concrete_brick.png'),
+                                                   'empty': load_image('concrete_brick_2.png'),
+                                                   'border': load_image('border.png')}
+
+                                    show_1 = False
+                                    show = False
+
+                                elif event_2.key == pygame.K_2:
+                                    tile_images = {'wall': load_image('wood_boards.png'),
+                                                   'empty': load_image('wood_boards.png'),
+                                                   'border': load_image('border.png')}
+
+                                    show_1 = False
+                                    show = False
+
+                                elif event_2.key == pygame.K_ESCAPE:
+                                    show = True
+                                    image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                    rect = image.get_rect(bottomright=(W, H))
+                                    sc.blit(image, rect)
+
+                                    pygame.display.update()
+                                    show_1 = False
+
+                elif event_1.key == pygame.K_h:  # меню правила
+                    image = pygame.image.load('data/start_menu/main_menu_rules.png')
+                    rect = image.get_rect(bottomright=(W, H))
+                    sc.blit(image, rect)
+                    pygame.display.update()
+
+                    show_1 = True
+
+                    while show_1:
+                        for event_2 in pygame.event.get():
+                            # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+                            if event_2.type == pygame.QUIT:
+                                sys.exit()
+                            if event_2.type == pygame.KEYDOWN:
+                                if event_2.key == pygame.K_ESCAPE:
+                                    show = True
+                                    image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                    rect = image.get_rect(bottomright=(W, H))
+                                    sc.blit(image, rect)
+
+                                    pygame.display.update()
+                                    show_1 = False
+
+                elif event_1.key == pygame.K_ESCAPE:
+                    exit(0)
+
+
+show_menu()
+
+
+# КОНЕЦ ИГРЫ
+def show_end_menu(result):
+    show = True
+    image = None
+
+    if result == 1:
+        image = pygame.image.load('data/end_menu/end_menu_win.png')
+    elif result == 0:
+        image = pygame.image.load('data/end_menu/end_menu_fail.png')
+
+    rect = image.get_rect(bottomright=(W, H))
+    sc.blit(image, rect)
+
+    font = pygame.font.Font(font_name, 40)
+    text_surface = font.render(str(score), True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (518, 290)
+    sc.blit(text_surface, text_rect)
+
+    font = pygame.font.Font(font_name, 40)
+    text_surface = font.render((str(datetime.datetime.now() - initial_time))[2:7], True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (588, 340)
+    sc.blit(text_surface, text_rect)
+
+    pygame.display.update()
+
+    while show:
+        for event_1 in pygame.event.get():
+            # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+            if event_1.type == pygame.QUIT:
+                sys.exit()
+            if event_1.type == pygame.KEYDOWN:
+                if event_1.key == pygame.K_ESCAPE:
+                    exit(0)
 
 
 # ОБЪЕКТ ГРАНИЦА СТНЕЫ
