@@ -6,7 +6,6 @@ import time
 import datetime
 
 while True:
-    print(2)
     # КОНСТАНТЫ
     FPS = 60  # fps
     W = 1000  # ширина экрана
@@ -30,9 +29,9 @@ while True:
     initial_time = datetime.datetime.now()  # время начала игры
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.0.0 '  # версия
+    version = '1.0.1 '  # версия
 
-    # 1. Добалено бесконечное перемещение по интерфейсу игры
+    # 1. Добавлено отображение управления
     # 2. Незначительная оптимизация кода
     # 3. Не доделал доделал таймер(
 
@@ -96,7 +95,7 @@ while True:
         if k % 3 == 2:
             pass
 
-
+    # ОТРИСОВКА СПРАЙТОВ НА ЭКРАНЕ
     def draw_sprite_group():
         tiles_group.draw(sc)  # карта
         wall_border_group.draw(sc)  # граници стен
@@ -142,15 +141,16 @@ while True:
 
     # ГЛАВНОЕ МЕНЮ
     def show_menu():
+        # ПАРАМЕТРЫ
         show = True
         image = pygame.image.load('data/start_menu/main_menu_test.png')
         rect = image.get_rect(bottomright=(W, H))
         sc.blit(image, rect)
+        global tile_images
 
         pygame.display.update()
 
-        global tile_images
-
+        # ЗАПУСТИЛ ГЛАВНОЕ МЕНЮ
         while show:
             for event_1 in pygame.event.get():
                 # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
@@ -166,6 +166,7 @@ while True:
 
                         show_1 = True
 
+                        # ЗАПУСК МЕНЮ ВЫБОРА УРОВНЯ
                         while show_1:
                             for event_2 in pygame.event.get():
                                 # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
@@ -205,6 +206,7 @@ while True:
 
                         show_1 = True
 
+                        # ЗАПУСК ГЛАВНОГО МЕНЮ
                         while show_1:
                             for event_2 in pygame.event.get():
                                 # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
@@ -223,47 +225,42 @@ while True:
                     elif event_1.key == pygame.K_ESCAPE:
                         exit(0)
 
-
-    show_menu()
-
-    # КОНЕЦ ИГРЫ
+    # ФИНАЛЬНОЕ МЕНЮ
     def show_end_menu(result):
-        show = True
-        image = None
+        show = True  # показ меню
+        image = None  # наличие картинки
 
-        if result == 1:
+        if result == 1:  # выиигрышь или поражение
             image = pygame.image.load('data/end_menu/end_menu_win.png')
         elif result == 0:
             image = pygame.image.load('data/end_menu/end_menu_fail.png')
 
         rect = image.get_rect(bottomright=(W, H))
-        sc.blit(image, rect)
+        sc.blit(image, rect)  # нарисовал финальный мнтерфейс
 
-        font = pygame.font.Font(font_name, 40)
+        # ОТРИСОВКА РЕЗУЛЬТАТОВ
+        font = pygame.font.Font(font_name, 40)  # счёт
         text_surface = font.render(str(score), True, WHITE)
         text_rect = text_surface.get_rect()
         text_rect.midtop = (518, 290)
         sc.blit(text_surface, text_rect)
 
-        font = pygame.font.Font(font_name, 40)
+        font = pygame.font.Font(font_name, 40)  # время
         text_surface = font.render((str(datetime.datetime.now() - initial_time))[2:7], True, WHITE)
         text_rect = text_surface.get_rect()
         text_rect.midtop = (588, 340)
         sc.blit(text_surface, text_rect)
 
-        pygame.display.update()
+        pygame.display.update()  # обновил дисплей
 
+        # ЗАПУСТИЛ ФИНАЛЬНОЕ МЕНЮ
         while show:
             for event_1 in pygame.event.get():
-                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
                 if event_1.type == pygame.QUIT:
                     sys.exit()
                 if event_1.type == pygame.KEYDOWN:
                     if event_1.key == pygame.K_ESCAPE:
-                        exit(0)
-                    elif event_1.key == pygame.K_m:
                         show = False
-                        print(1)
 
     # ОБЪЕКТ ГРАНИЦА СТНЕЫ
     class Wall_border(pygame.sprite.Sprite):
@@ -449,6 +446,7 @@ while True:
                     Tile('border', x, y)
         return x, y
 
+    show_menu()
 
     # СОЗДАНИЕ СПРАЙТОВ
     wall_top = Wall(12.7, 0.9, 'wall_top_2.png')  # верхняя стена
