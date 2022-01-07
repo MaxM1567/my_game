@@ -4,6 +4,9 @@ import os
 import sys
 import datetime
 
+language = open('data/language.txt').read()
+print(language)
+
 while True:
     # КОНСТАНТЫ
     FPS = 60  # fps
@@ -27,10 +30,15 @@ while True:
     tile_images = {}  # список плиток для карты
     initial_time = datetime.datetime.now()  # время начала игры
 
-    # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.0.2 '  # версия
+    if language == 'ru':
+        directory = 'data/interface/ru'
+    elif language == 'en':
+        directory = 'data/interface/en'
 
-    # 1. На экране окончания время показывается точнее
+    # ВЕРСИЯ ПРОГРАММЫ
+    version = '1.1.0 '  # версия
+
+    # 1. Добавлена возможность изменения языка
     # 2. Незначительная оптимизация кода
 
     # ЗАГРУЗКА КАРТИНОК
@@ -123,7 +131,8 @@ while True:
             os.remove('data/result.txt')
 
             f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Win\n{text}')
+            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                    f'/{score}/Win\n{text}')
             f.close()
 
             show_end_menu(1)
@@ -146,72 +155,102 @@ while True:
     # ГЛАВНОЕ МЕНЮ
     def show_menu():
         # ПАРАМЕТРЫ
-        show = True
-        image = pygame.image.load('data/start_menu/main_menu_test.png')
-        rect = image.get_rect(bottomright=(W, H))
-        sc.blit(image, rect)
+        global language
+        global directory
         global tile_images
 
+        show = True
+
+        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+        rect = image.get_rect(bottomright=(W, H))
+        sc.blit(image, rect)
         pygame.display.update()
 
         # ЗАПУСТИЛ ГЛАВНОЕ МЕНЮ
         while show:
             for event_1 in pygame.event.get():
-                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
                 if event_1.type == pygame.QUIT:
                     sys.exit()
                 if event_1.type == pygame.KEYDOWN:
-                    if event_1.key == pygame.K_s:  # меню старт
 
-                        image = pygame.image.load('data/start_menu/main_menu_levels.png')
+                    # ЗАПУСК РАЗНЫХ МЕНЮ
+                    if event_1.key == pygame.K_l:  # меню выбоа уровня
+                        # ПАРАМЕТРЫ
+                        show_level = True
+
+                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                        image = pygame.image.load(f'{directory}/start_menu/main_menu_levels.png')
                         rect = image.get_rect(bottomright=(W, H))
                         sc.blit(image, rect)
                         pygame.display.update()
 
-                        show_1 = True
-
-                        # ЗАПУСК МЕНЮ ВЫБОРА УРОВНЯ
-                        while show_1:
-                            for event_2 in pygame.event.get():
-                                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
-                                if event_2.type == pygame.QUIT:
+                        while show_level:
+                            for event_level in pygame.event.get():
+                                if event_level.type == pygame.QUIT:
                                     sys.exit()
-                                if event_2.type == pygame.KEYDOWN:
-                                    if event_2.key == pygame.K_1:
+                                if event_level.type == pygame.KEYDOWN:
+                                    if event_level.key == pygame.K_1:
                                         tile_images = {'wall': load_image('concrete_brick.png'),
                                                        'empty': load_image('concrete_brick_2.png'),
                                                        'border': load_image('border.png')}
 
-                                        show_1 = False
+                                        show_level = False
                                         show = False
 
-                                    elif event_2.key == pygame.K_2:
+                                    elif event_level.key == pygame.K_2:
                                         tile_images = {'wall': load_image('wood_boards.png'),
                                                        'empty': load_image('wood_boards.png'),
                                                        'border': load_image('border.png')}
 
-                                        show_1 = False
+                                        show_level = False
                                         show = False
 
-                                    elif event_2.key == pygame.K_ESCAPE:
-                                        show = True
-                                        image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                    elif event_level.key == pygame.K_ESCAPE:
+                                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
                                         rect = image.get_rect(bottomright=(W, H))
                                         sc.blit(image, rect)
-
                                         pygame.display.update()
-                                        show_1 = False
+
+                                        show_level = False
 
                     elif event_1.key == pygame.K_h:  # меню правила
-                        image = pygame.image.load('data/start_menu/main_menu_rules.png')
+                        # ПАРАМЕТРЫ
+                        show_rules = True
+
+                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                        image = pygame.image.load(f'{directory}/start_menu/main_menu_rules.png')
                         rect = image.get_rect(bottomright=(W, H))
                         sc.blit(image, rect)
                         pygame.display.update()
 
-                        show_1 = True
+                        while show_rules:
+                            for event_rules in pygame.event.get():
+                                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+                                if event_rules.type == pygame.QUIT:
+                                    sys.exit()
+                                if event_rules.type == pygame.KEYDOWN:
+                                    if event_rules.key == pygame.K_ESCAPE:
+                                        show = True
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+                                        rect = image.get_rect(bottomright=(W, H))
+                                        sc.blit(image, rect)
 
-                        # ЗАПУСК ГЛАВНОГО МЕНЮ
-                        while show_1:
+                                        pygame.display.update()
+                                        show_rules = False
+
+                    elif event_1.key == pygame.K_s:  # меню настроек
+                        # ПАРАМЕТРЫ
+                        show_settings = True
+
+                        while show_settings:
+                            # НАРИСОВАЛ ИНТЕРФЕЙС
+                            image = pygame.image.load(f'{directory}/start_menu/main_menu_settings.png')
+                            rect = image.get_rect(bottomright=(W, H))
+                            sc.blit(image, rect)
+                            pygame.display.update()
+
                             for event_2 in pygame.event.get():
                                 # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
                                 if event_2.type == pygame.QUIT:
@@ -219,26 +258,48 @@ while True:
                                 if event_2.type == pygame.KEYDOWN:
                                     if event_2.key == pygame.K_ESCAPE:
                                         show = True
-                                        image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
                                         rect = image.get_rect(bottomright=(W, H))
                                         sc.blit(image, rect)
 
                                         pygame.display.update()
-                                        show_1 = False
+                                        show_settings = False
+
+                                    elif event_2.key == pygame.K_l:
+                                        print(language)
+
+                                        if language == 'ru':
+                                            f = open('data/language.txt', 'w')
+                                            f.write('en')
+                                            f.close()
+
+                                            directory = 'data/interface/en'
+
+                                        elif language == 'en':
+                                            f = open('data/language.txt', 'w')
+                                            f.write('ru')
+                                            f.close()
+
+                                            directory = 'data/interface/ru'
+
+                                        language = open('data/language.txt').read()
+                                        pygame.display.update()
 
                     elif event_1.key == pygame.K_ESCAPE:
                         exit(0)
 
     # ФИНАЛЬНОЕ МЕНЮ
     def show_end_menu(result):
+        # ПАРАМЕТРЫ
         show = True  # показ меню
         image = None  # наличие картинки
+        global language
 
+        # ОТОБРАЗИЛ ИНТЕРФЕЙС
         if result == 1:  # выиигрышь или поражение
-            image = pygame.image.load('data/end_menu/end_menu_win.png')
+            image = pygame.image.load(f'{directory}/end_menu/end_menu_win.png')
         elif result == 0:
-            image = pygame.image.load('data/end_menu/end_menu_fail.png')
-
+            image = pygame.image.load(f'{directory}/end_menu/end_menu_fail.png')
         rect = image.get_rect(bottomright=(W, H))
         sc.blit(image, rect)  # нарисовал финальный мнтерфейс
 
@@ -246,13 +307,23 @@ while True:
         font = pygame.font.Font(font_name, 40)  # счёт
         text_surface = font.render(str(score), True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.midtop = (518, 290)
+
+        if language == 'ru':
+            text_rect.midtop = (518, 290)
+        else:
+            text_rect.midtop = (538, 290)
+
         sc.blit(text_surface, text_rect)
 
         font = pygame.font.Font(font_name, 40)  # время
         text_surface = font.render((str(datetime.datetime.now() - initial_time))[2:7], True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.midtop = (588, 340)
+
+        if language == 'ru':
+            text_rect.midtop = (588, 340)
+        else:
+            text_rect.midtop = (535, 340)
+
         sc.blit(text_surface, text_rect)
 
         pygame.display.update()  # обновил дисплей
