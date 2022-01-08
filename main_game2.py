@@ -2,8 +2,10 @@ import random
 import pygame
 import os
 import sys
-import time
 import datetime
+
+language = open('data/language.txt').read()
+print(language)
 
 while True:
     # КОНСТАНТЫ
@@ -28,13 +30,18 @@ while True:
     tile_images = {}  # список плиток для карты
     initial_time = datetime.datetime.now()  # время начала игры
 
-    # ВЕРСИЯ ПРОГРАММЫ
-    version = '0.9.7 '  # версия
+    if language == 'ru':
+        directory = 'data/interface/ru'
+    elif language == 'en':
+        directory = 'data/interface/en'
 
-    # Рабочие фотки с функционалом
-    # Монетки не создаются в ящиках (возможен сбой, но они все равно должны забираться)
-    # Исправлен секундомер с переводом секунд в минуты
-    # нажатие "-" ставит музыку на паузу (нажатие "=/+" продолжает музыку)
+    # ВЕРСИЯ ПРОГРАММЫ
+    version = '1.1.2 '  # версия
+    # было 1.1.1
+    # последняя версия - федор
+
+    # 1. Есть звуки шагов
+    # 2. Начал делать таблицу с результатми (alpha ver)
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -66,6 +73,13 @@ while True:
         text_rect.midtop = (x, y)
         surf.blit(text_surface, text_rect)
 
+    def draw_results(surf, text, size, x, y):
+        font = pygame.font.Font(font_name, size)
+        text_surface = font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (x, y)
+        surf.blit(text_surface, text_rect)
+
     # ЗАГРУЗКА УРОВНЯ
     def load_level(filename):
         filename = "data/" + filename
@@ -84,7 +98,7 @@ while True:
         if k % 3 == 0:
             # РИСОВКА ТАЙМЕРА
             pygame.draw.rect(sc, BLACK, (850, 0, 950, 40))
-            
+
             # РАСЧЁТ ВРЕМЕНИ
             seconds = (datetime.datetime.now() - start_time).seconds
             minutes = seconds // 60
@@ -126,7 +140,8 @@ while True:
             os.remove('data/result.txt')
 
             f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Win\n{text}')
+            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                    f'/{score}/Win\n{text}')
             f.close()
 
             show_end_menu(1)
@@ -138,7 +153,9 @@ while True:
             f.close()
             os.remove('data/result.txt')
             f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{score}/Fail\n{text}')
+            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                    f'/{score}/Fail\n{text}')
+
             f.close()
 
             show_end_menu(0)
@@ -147,72 +164,102 @@ while True:
     # ГЛАВНОЕ МЕНЮ
     def show_menu():
         # ПАРАМЕТРЫ
-        show = True
-        image = pygame.image.load('data/start_menu/main_menu_test.png')
-        rect = image.get_rect(bottomright=(W, H))
-        sc.blit(image, rect)
+        global language
+        global directory
         global tile_images
 
+        show = True
+
+        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+        rect = image.get_rect(bottomright=(W, H))
+        sc.blit(image, rect)
         pygame.display.update()
 
         # ЗАПУСТИЛ ГЛАВНОЕ МЕНЮ
         while show:
             for event_1 in pygame.event.get():
-                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
                 if event_1.type == pygame.QUIT:
                     sys.exit()
                 if event_1.type == pygame.KEYDOWN:
-                    if event_1.key == pygame.K_s:  # меню старт
 
-                        image = pygame.image.load('data/start_menu/main_menu_levels.png')
+                    # ЗАПУСК РАЗНЫХ МЕНЮ
+                    if event_1.key == pygame.K_l:  # меню выбора уровня
+                        # ПАРАМЕТРЫ
+                        show_level = True
+
+                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                        image = pygame.image.load(f'{directory}/start_menu/main_menu_levels.png')
                         rect = image.get_rect(bottomright=(W, H))
                         sc.blit(image, rect)
                         pygame.display.update()
 
-                        show_1 = True
-
-                        # ЗАПУСК МЕНЮ ВЫБОРА УРОВНЯ
-                        while show_1:
-                            for event_2 in pygame.event.get():
-                                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
-                                if event_2.type == pygame.QUIT:
+                        while show_level:
+                            for event_level in pygame.event.get():
+                                if event_level.type == pygame.QUIT:
                                     sys.exit()
-                                if event_2.type == pygame.KEYDOWN:
-                                    if event_2.key == pygame.K_1:
+                                if event_level.type == pygame.KEYDOWN:
+                                    if event_level.key == pygame.K_1:
                                         tile_images = {'wall': load_image('concrete_brick.png'),
                                                        'empty': load_image('concrete_brick_2.png'),
                                                        'border': load_image('border.png')}
 
-                                        show_1 = False
+                                        show_level = False
                                         show = False
 
-                                    elif event_2.key == pygame.K_2:
+                                    elif event_level.key == pygame.K_2:
                                         tile_images = {'wall': load_image('wood_boards.png'),
                                                        'empty': load_image('wood_boards.png'),
                                                        'border': load_image('border.png')}
 
-                                        show_1 = False
+                                        show_level = False
                                         show = False
 
-                                    elif event_2.key == pygame.K_ESCAPE:
-                                        show = True
-                                        image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                    elif event_level.key == pygame.K_ESCAPE:
+                                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
                                         rect = image.get_rect(bottomright=(W, H))
                                         sc.blit(image, rect)
-
                                         pygame.display.update()
-                                        show_1 = False
+
+                                        show_level = False
 
                     elif event_1.key == pygame.K_h:  # меню правила
-                        image = pygame.image.load('data/start_menu/main_menu_rules.png')
+                        # ПАРАМЕТРЫ
+                        show_rules = True
+
+                        # ОТОБРАЗИЛ ИНТЕРФЕЙС
+                        image = pygame.image.load(f'{directory}/start_menu/main_menu_rules.png')
                         rect = image.get_rect(bottomright=(W, H))
                         sc.blit(image, rect)
                         pygame.display.update()
 
-                        show_1 = True
+                        while show_rules:
+                            for event_rules in pygame.event.get():
+                                # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
+                                if event_rules.type == pygame.QUIT:
+                                    sys.exit()
+                                if event_rules.type == pygame.KEYDOWN:
+                                    if event_rules.key == pygame.K_ESCAPE:
+                                        show = True
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+                                        rect = image.get_rect(bottomright=(W, H))
+                                        sc.blit(image, rect)
 
-                        # ЗАПУСК ГЛАВНОГО МЕНЮ
-                        while show_1:
+                                        pygame.display.update()
+                                        show_rules = False
+
+                    elif event_1.key == pygame.K_s:  # меню настроек
+                        # ПАРАМЕТРЫ
+                        show_settings = True
+
+                        while show_settings:
+                            # НАРИСОВАЛ ИНТЕРФЕЙС
+                            image = pygame.image.load(f'{directory}/start_menu/main_menu_settings.png')
+                            rect = image.get_rect(bottomright=(W, H))
+                            sc.blit(image, rect)
+                            pygame.display.update()
+
                             for event_2 in pygame.event.get():
                                 # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
                                 if event_2.type == pygame.QUIT:
@@ -220,26 +267,88 @@ while True:
                                 if event_2.type == pygame.KEYDOWN:
                                     if event_2.key == pygame.K_ESCAPE:
                                         show = True
-                                        image = pygame.image.load('data/start_menu/main_menu_test.png')
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
                                         rect = image.get_rect(bottomright=(W, H))
                                         sc.blit(image, rect)
 
                                         pygame.display.update()
-                                        show_1 = False
+                                        show_settings = False
+
+                                    elif event_2.key == pygame.K_l:
+                                        print(language)
+
+                                        if language == 'ru':
+                                            f = open('data/language.txt', 'w')
+                                            f.write('en')
+                                            f.close()
+
+                                            directory = 'data/interface/en'
+
+                                        elif language == 'en':
+                                            f = open('data/language.txt', 'w')
+                                            f.write('ru')
+                                            f.close()
+
+                                            directory = 'data/interface/ru'
+
+                                        language = open('data/language.txt').read()
+                                        pygame.display.update()
+                    elif event_1.key == pygame.K_r:
+                        show_results = True
+
+                        with open('data/result.txt') as results:
+                            records = results.readlines()
+
+                        for index, record in enumerate(records):
+                            data = record.split('/')
+                            records[index] = data
+
+                        while show_results:
+                            for event in pygame.event.get():
+                                if event.type == pygame.QUIT:
+                                    sys.exit()
+
+                                if event.type == pygame.KEYDOWN:
+                                    if event.key == pygame.K_ESCAPE:
+                                        show = True
+                                        image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+                                        rect = image.get_rect(bottomright=(W, H))
+                                        sc.blit(image, rect)
+
+                                        pygame.display.update()
+                                        show_settings = False
+                                    elif event.key == pygame.K_c:
+                                        open('data/result.txt', 'w')
+                                        with open('data/result.txt') as results:
+                                            records = results.readlines()
+
+                                        for index, record in enumerate(records):
+                                            data = record.split('/')
+                                            records[index] = data
+
+                            for index, record in enumerate(records):
+                                # record: дата и время начала игры, время самой игры, кол-во монеток, итог игры
+                                #draw_results(sc, str(record), 15, 5, (index + 1) * 10)
+                                print('\t'.join(record))
+
+                            pygame.display.update()
+
 
                     elif event_1.key == pygame.K_ESCAPE:
                         exit(0)
 
     # ФИНАЛЬНОЕ МЕНЮ
     def show_end_menu(result):
+        # ПАРАМЕТРЫ
+        global language
         show = True  # показ меню
         image = None  # наличие картинки
 
+        # ОТОБРАЗИЛ ИНТЕРФЕЙС
         if result == 1:  # выиигрышь или поражение
-            image = pygame.image.load('data/end_menu/end_menu_win.png')
+            image = pygame.image.load(f'{directory}/end_menu/end_menu_win.png')
         elif result == 0:
-            image = pygame.image.load('data/end_menu/end_menu_fail.png')
-
+            image = pygame.image.load(f'{directory}/end_menu/end_menu_fail.png')
         rect = image.get_rect(bottomright=(W, H))
         sc.blit(image, rect)  # нарисовал финальный мнтерфейс
 
@@ -247,13 +356,23 @@ while True:
         font = pygame.font.Font(font_name, 40)  # счёт
         text_surface = font.render(str(score), True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.midtop = (518, 290)
+
+        if language == 'ru':
+            text_rect.midtop = (518, 290)
+        else:
+            text_rect.midtop = (538, 290)
+
         sc.blit(text_surface, text_rect)
 
         font = pygame.font.Font(font_name, 40)  # время
         text_surface = font.render((str(datetime.datetime.now() - initial_time))[2:7], True, WHITE)
         text_rect = text_surface.get_rect()
-        text_rect.midtop = (588, 340)
+
+        if language == 'ru':
+            text_rect.midtop = (588, 340)
+        else:
+            text_rect.midtop = (535, 340)
+
         sc.blit(text_surface, text_rect)
 
         pygame.display.update()  # обновил дисплей
@@ -462,7 +581,6 @@ while True:
     wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
 
     for i in range(5):  # генерация монеток
-        # федор сделал нормальный спавн монет
         money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
         while pygame.sprite.spritecollide(money, obstacle_group, True):
             money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
@@ -483,13 +601,17 @@ while True:
             player.rect.x += new_x
             player.rect.y += new_y
 
-    opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
+    x = random.randint(15, 60)
+    y = random.randint(5, 50)
+    while 25 < x < 35 or 13 < y < 17:
+        x = random.randint(15, 60)
+        y = random.randint(5, 50)
 
-    # exit_1 = Exit(random.randint(15, 85), 48.98, 'Exit_open_2.png')  # выход 1 (пока не работает)
+    opponent = Enemy(x, y, 'enemy_left.png')  # создание врага
 
-    x_exit = random.randint(15, 85)  # x выхода 2
-    exit_2 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 2
-    exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 2
+    x_exit = random.randint(15, 85)  # x выхода 1
+    exit_1 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
+    exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 1
 
     camera = Camera()  # создал камеру
 
@@ -531,6 +653,7 @@ while True:
         pygame.mixer.music.load('data/music.mp3')  # музыка
         pygame.mixer.music.play()
         pygame.mixer.music.set_volume(15)
+        step_sound = pygame.mixer.Sound('data/run.mp3')
 
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
@@ -599,6 +722,7 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -614,6 +738,7 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -629,6 +754,7 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -644,6 +770,7 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -656,6 +783,7 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -668,11 +796,13 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
 
             elif keys[pygame.K_DOWN]:
+                #step_sound.play()
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
@@ -682,6 +812,7 @@ while True:
                 player.rect.y += 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
@@ -696,6 +827,7 @@ while True:
                 player.rect.y -= 3
 
                 if count == speed_animation:
+                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
