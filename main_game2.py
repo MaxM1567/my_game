@@ -4,8 +4,7 @@ import os
 import sys
 import datetime
 
-language = open('data/language.txt').read()
-print(language)
+language = (open('data/language.txt').read()).split('/')[0]
 
 while True:
     # КОНСТАНТЫ
@@ -29,6 +28,8 @@ while True:
     side_character = 'r'
     tile_images = {}  # список плиток для карты
     initial_time = datetime.datetime.now()  # время начала игры
+    step_sound = 'music'  # инициализировал звуки шагов
+    status_sound = False  # надо ли озвучивать шаги
 
     if language == 'ru':
         directory = 'data/interface/ru'
@@ -36,10 +37,13 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.1.1 '  # версия
+    version = '1.1.3 '  # версия
 
-    # 1. Добавлена возможность изменения языка
-    # 2. Незначительная оптимизация кода
+    # 1. Монетки больше не появляются в ящиках
+    # 2. Кнопка вкл/выкл музыки работает
+    # 3. Кнопка вкл/выкл звуковых эффектов работает (лучше не включать)
+    # 4. Звуковые эффекты и музыка не работают одновременно
+    # 5. Музыка прекращает играть при выходе в главное меню
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -246,7 +250,27 @@ while True:
 
                         while show_settings:
                             # НАРИСОВАЛ ИНТЕРФЕЙС
-                            image = pygame.image.load(f'{directory}/start_menu/main_menu_settings.png')
+
+                            f = open('data/language.txt', 'r')
+                            number_image = (f.read())[2:]
+                            f.close()
+
+                            if number_image == '/on/on':
+                                image = \
+                                    pygame.image.load(f'{directory}/start_menu/main_menu_settings_sound_all_on.png')
+
+                            elif number_image == '/off/on':
+                                image = \
+                                    pygame.image.load(f'{directory}/start_menu/main_menu_settings_sound_off_on.png')
+
+                            elif number_image == '/on/off':
+                                image = \
+                                    pygame.image.load(f'{directory}/start_menu/main_menu_settings_sound_on_off.png')
+
+                            elif number_image == '/off/off':
+                                image = \
+                                    pygame.image.load(f'{directory}/start_menu/main_menu_settings_sound_all_off.png')
+
                             rect = image.get_rect(bottomright=(W, H))
                             sc.blit(image, rect)
                             pygame.display.update()
@@ -265,24 +289,84 @@ while True:
                                         pygame.display.update()
                                         show_settings = False
 
-                                    elif event_2.key == pygame.K_l:
-                                        print(language)
+                                    elif event_2.key == pygame.K_m:
 
-                                        if language == 'ru':
+                                        f = open('data/language.txt', 'r')
+                                        text = (f.read()).split('/')[1]
+                                        f.close()
+
+                                        if text == 'on':
+                                            f = open('data/language.txt', 'r')
+                                            text = (f.read())
+                                            f.close()
+                                            os.remove('data/language.txt')
+
                                             f = open('data/language.txt', 'w')
-                                            f.write('en')
+                                            f.write(text[:3] + 'off' + text[5:])
+                                            f.close()
+
+                                        elif text == 'off':
+                                            f = open('data/language.txt', 'r')
+                                            text = (f.read())
+                                            f.close()
+                                            os.remove('data/language.txt')
+
+                                            f = open('data/language.txt', 'w')
+                                            f.write(text[:3] + 'on' + text[6:])
+                                            f.close()
+
+                                    elif event_2.key == pygame.K_e:
+
+                                        f = open('data/language.txt', 'r')
+                                        text = (f.read()).split('/')[2]
+                                        f.close()
+
+                                        if text == 'on':
+                                            f = open('data/language.txt', 'r')
+                                            text = ('/'.join((f.read().split('/'))[:2]))
+                                            f.close()
+                                            os.remove('data/language.txt')
+
+                                            f = open('data/language.txt', 'w')
+                                            f.write(text + '/off')
+                                            f.close()
+
+                                        elif text == 'off':
+                                            f = open('data/language.txt', 'r')
+                                            text = ('/'.join((f.read().split('/'))[:2]))
+                                            f.close()
+                                            os.remove('data/language.txt')
+
+                                            f = open('data/language.txt', 'w')
+                                            f.write(text + '/on')
+                                            f.close()
+
+                                    elif event_2.key == pygame.K_l:
+                                        if language == 'ru':
+                                            f = open('data/language.txt', 'r+')
+                                            text = (f.read())[2:]
+                                            f.close()
+                                            os.remove('data/language.txt')
+
+                                            f = open('data/language.txt', 'w')
+                                            f.write('en' + text)
                                             f.close()
 
                                             directory = 'data/interface/en'
 
                                         elif language == 'en':
+                                            f = open('data/language.txt', 'r+')
+                                            text = (f.read())[2:]
+                                            f.close()
+                                            os.remove('data/language.txt')
+
                                             f = open('data/language.txt', 'w')
-                                            f.write('ru')
+                                            f.write('ru' + text)
                                             f.close()
 
                                             directory = 'data/interface/ru'
 
-                                        language = open('data/language.txt').read()
+                                        language = (open('data/language.txt').read()).split('/')[0]
                                         pygame.display.update()
 
                     elif event_1.key == pygame.K_ESCAPE:
@@ -337,6 +421,8 @@ while True:
                     if event_1.key == pygame.K_ESCAPE:
                         show = False
 
+        pygame.mixer.music.stop()
+
     # ОБЪЕКТ ГРАНИЦА СТНЕЫ
     class Wall_border(pygame.sprite.Sprite):
         def __init__(self, x, y, filename):
@@ -378,8 +464,8 @@ while True:
         def __init__(self):
             self.dx = 0
             self.dy = 0
-
         # сдвинуть объект obj на смещение камеры
+
         def apply(self, obj):
             obj.rect.x += self.dx
             obj.rect.y += self.dy
@@ -521,6 +607,7 @@ while True:
                     Tile('border', x, y)
         return x, y
 
+
     show_menu()
 
     # СОЗДАНИЕ СПРАЙТОВ
@@ -531,17 +618,19 @@ while True:
     wall_left = Wall_border(90.7, 0.9, 'wall_right.png')  # левая стена
     wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
 
-    for i in range(5):  # генерация монеток
-        money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
-        while pygame.sprite.spritecollide(money, obstacle_group, True):
-            money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
-
-    for i in range(50):  # генерация ящиков
-        n = random.randint(1, 3)
+    for i in range(60):  # генерация ящиков
+        n = random.randint(1, 3)  # цвет ящиков
         if n == 1:
             obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2_2.png')
         else:
             obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2.png')
+
+    for i in range(5):  # генерация монеток
+        money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')  # если монета в ящике
+        if pygame.sprite.spritecollide(money, obstacle_group, False):
+            while pygame.sprite.spritecollide(money, obstacle_group, False):
+                money.rect.x = random.randint(630, 3750)  # новый x
+                money.rect.y = random.randint(200, 2300)  # новый y
 
     player = Player(30, 15, 'character_right.png')  # создание главного героя
     if pygame.sprite.spritecollide(player, obstacle_group, False):  # заспавнился ли игрок в ящике
@@ -595,9 +684,21 @@ while True:
         start_time = datetime.datetime.now()
 
         # МУЗЫКА
-        pygame.mixer.music.load('data/music.mp3')  # музыка
-        pygame.mixer.music.play()
-        pygame.mixer.music.set_volume(15)
+        file = open('data/language.txt', 'r')
+        status_sound = file.read()
+
+        if (status_sound.split('/'))[1] == 'on':
+            pygame.mixer.music.load('data/music.mp3')  # музыка
+            pygame.mixer.music.play()
+            pygame.mixer.music.set_volume(15)
+
+        if (status_sound.split('/'))[2] == 'on':
+            step_sound = pygame.mixer.Sound('data/run.mp3')
+            status_sound = True
+        else:
+            status_sound = False
+
+        file.close()
 
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
@@ -656,6 +757,9 @@ while True:
             count_enemy += 1
 
             if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:  # игрок
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -671,6 +775,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -686,6 +793,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -701,6 +811,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -716,6 +829,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_LEFT]:
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -728,6 +844,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_RIGHT]:
+                if status_sound:
+                    step_sound.play()
+
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -740,6 +859,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_DOWN]:
+                if status_sound:
+                    step_sound.play()
+
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
@@ -754,6 +876,9 @@ while True:
                 count += 1
 
             elif keys[pygame.K_UP]:
+                if status_sound:
+                    step_sound.play()
+
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
