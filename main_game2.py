@@ -7,6 +7,11 @@ import datetime
 language = open('data/language.txt').read()
 print(language)
 
+nickname = input('Введите ник: ')
+while len(nickname) >= 5:
+    print('Слишком длинный никнейм. Максимальная длина -- 5 символов')
+    nickname = input('Введите ник: ')
+
 while True:
     # КОНСТАНТЫ
     FPS = 60  # fps
@@ -36,12 +41,13 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.1.2 '  # версия
-    # было 1.1.1
+    version = '1.1.3 '  # версия
+    # было 1.1.2
     # последняя версия - федор
 
     # 1. Есть звуки шагов
     # 2. Начал делать таблицу с результатми (alpha ver)
+    # 2.2 Доделываю таблицу
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -52,6 +58,7 @@ while True:
             sys.exit()
         image = pygame.image.load(fullname)
         return image
+
 
     # РИСОВАЛКА ТЕКСТА
     def draw_text(surf, text, size, x, y):
@@ -65,6 +72,7 @@ while True:
         text_rect.midtop = (x, y)
         surf.blit(text_surface, text_rect)
 
+
     # РИМОВАЛКА ТАЙМЕРА
     def draw_seconds(surf, text, size, x, y):
         font = pygame.font.Font(font_name, size)
@@ -73,12 +81,14 @@ while True:
         text_rect.midtop = (x, y)
         surf.blit(text_surface, text_rect)
 
+
     def draw_results(surf, text, size, x, y):
         font = pygame.font.Font(font_name, size)
         text_surface = font.render(text, True, WHITE)
         text_rect = text_surface.get_rect()
         text_rect.midtop = (x, y)
         surf.blit(text_surface, text_rect)
+
 
     # ЗАГРУЗКА УРОВНЯ
     def load_level(filename):
@@ -92,6 +102,7 @@ while True:
 
         # дополняем каждую строку пустыми клетками ('@')
         return list(map(lambda x: x.ljust(max_width, '@'), level_map))
+
 
     # ОТОБРАЖЕНИЕ ИНТЕРФЕЙСА
     def display_interface(k):
@@ -116,6 +127,7 @@ while True:
         if k % 3 == 2:
             pass
 
+
     # ОТРИСОВКА СПРАЙТОВ НА ЭКРАНЕ
     def draw_sprite_group():
         tiles_group.draw(sc)  # карта
@@ -128,19 +140,20 @@ while True:
         mobs_group.draw(sc)  # противник
         player_group.draw(sc)  # игрок
 
+
     # КОНЕЦ ИГРЫ
     def end_game():  # проверка: надо ли заканчивать игру
         global run
 
         if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
-            f = open('data/result.txt', 'r')
+            f = open('data/result.txt', 'r', encoding='utf-8')
             text = f.read()
             f.close()
 
             os.remove('data/result.txt')
 
-            f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+            f = open('data/result.txt', 'w', encoding='utf-8')
+            f.write(f'{nickname}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
                     f'/{score}/Win\n{text}')
             f.close()
 
@@ -148,12 +161,12 @@ while True:
             run = False
 
         elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
-            f = open('data/result.txt', 'r')
+            f = open('data/result.txt', 'r', encoding='utf-8')
             text = f.read()
             f.close()
             os.remove('data/result.txt')
-            f = open('data/result.txt', 'w')
-            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+            f = open('data/result.txt', 'w', encoding='utf-8')
+            f.write(f'{nickname}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
                     f'/{score}/Fail\n{text}')
 
             f.close()
@@ -293,10 +306,11 @@ while True:
 
                                         language = open('data/language.txt').read()
                                         pygame.display.update()
+
                     elif event_1.key == pygame.K_r:
                         show_results = True
 
-                        with open('data/result.txt') as results:
+                        with open('data/result.txt', encoding='utf-8') as results:
                             records = results.readlines()
 
                         for index, record in enumerate(records):
@@ -316,26 +330,40 @@ while True:
                                         sc.blit(image, rect)
 
                                         pygame.display.update()
-                                        show_settings = False
+                                        show_results= False
                                     elif event.key == pygame.K_c:
                                         open('data/result.txt', 'w')
-                                        with open('data/result.txt') as results:
+                                        with open('data/result.txt', encoding='utf-8') as results:
                                             records = results.readlines()
 
                                         for index, record in enumerate(records):
                                             data = record.split('/')
                                             records[index] = data
 
-                            for index, record in enumerate(records):
+                            sc.fill(BLACK)
+                            pygame.font.init()
+                            myfont = pygame.font.SysFont('Comic Sans MS', 30)
+                            records.sort(key=lambda x: x[2], reverse=True)
+
+                            textsurface = myfont.render('  НИК     ВРЕМЯ ИГРЫ     МОНЕТЫ     ИТОГ', False, (255, 255, 255))
+                            sc.blit(textsurface, (10, 25))
+
+                            for index, record in enumerate(records[:10]):
                                 # record: дата и время начала игры, время самой игры, кол-во монеток, итог игры
-                                #draw_results(sc, str(record), 15, 5, (index + 1) * 10)
-                                print('\t'.join(record))
+                                textsurface = myfont.render(f'{record[0]}         {record[1]}                    {record[2]}             {record[3][:-1]}', False, (255, 255, 255))
+                                sc.blit(textsurface, (10, (index + 2) * 25))
 
                             pygame.display.update()
 
 
                     elif event_1.key == pygame.K_ESCAPE:
                         exit(0)
+
+            image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
+            rect = image.get_rect(bottomright=(W, H))
+            sc.blit(image, rect)
+            pygame.display.update()
+            clock.tick(FPS)
 
     # ФИНАЛЬНОЕ МЕНЮ
     def show_end_menu(result):
@@ -628,6 +656,8 @@ while True:
         count = 0  # ход анимации
         animation = 0  # номер картинки в анимации
         speed_animation = 6  # скорость обновления картинок (чем больше тем медленнее)
+        step_count = 0
+        step_speed = 15
 
         walk_right = [pygame.transform.scale(pygame.image.load(f'data/walk/character_walk_{i}.png'),
                                              (76, 86)) for i in range(quantity_images)]  # список картинок
@@ -722,10 +752,14 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
                 side_character = 'l'
@@ -738,10 +772,14 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
                 side_character = 'r'
@@ -754,10 +792,14 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
                 side_character = 'l'
@@ -770,10 +812,14 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_LEFT]:
                 side_character = 'l'
@@ -783,10 +829,14 @@ while True:
                 player.rect.x -= 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_RIGHT]:
                 side_character = 'r'
@@ -796,13 +846,16 @@ while True:
                 player.rect.x += 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
 
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
+
             elif keys[pygame.K_DOWN]:
-                #step_sound.play()
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
@@ -812,10 +865,14 @@ while True:
                 player.rect.y += 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             elif keys[pygame.K_UP]:
                 if side_character == 'r':
@@ -827,10 +884,14 @@ while True:
                 player.rect.y -= 3
 
                 if count == speed_animation:
-                    step_sound.play()
                     animation += 1
                     count = 0
                 count += 1
+
+                if step_count == step_speed:
+                    step_sound.play()
+                    step_count = 0
+                step_count += 1
 
             else:
                 if side_character == 'r':
