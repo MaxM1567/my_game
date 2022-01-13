@@ -4,6 +4,7 @@ import os
 import sys
 import datetime
 
+
 language = open('data/language.txt').read()
 print(language)
 
@@ -11,7 +12,7 @@ nickname = input('Введите ник: ')
 while len(nickname) >= 5:
     print('Слишком длинный никнейм. Максимальная длина -- 5 символов')
     nickname = input('Введите ник: ')
-
+    
 while True:
     # КОНСТАНТЫ
     FPS = 60  # fps
@@ -27,7 +28,7 @@ while True:
     tile_width = tile_height = 48  # размер одного блока карты
 
     # ПАРАМЕТРЫ
-    sc = pygame.display.set_mode((W, H))  # разсер окна
+    sc = pygame.display.set_mode((W, H))  # размер окна
     clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
     score = 0  # счёт
     counter_interface = 0  # счётчик интерфейса
@@ -47,7 +48,8 @@ while True:
 
     # 1. Есть звуки шагов
     # 2. Начал делать таблицу с результатми (alpha ver)
-    # 2.2 Доделываю таблицу
+    # 3. таблица результатов (r)
+    # 4. сделал монетки-бусты (телеорт, скорость, щит)
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -88,6 +90,18 @@ while True:
         text_rect = text_surface.get_rect()
         text_rect.midtop = (x, y)
         surf.blit(text_surface, text_rect)
+    
+    def draw_boosts_shields(surf):
+        font = pygame.font.Font(font_name, 26)
+        text_surface = font.render('Boosts (b): ' + str(boost_count), True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (65, 5)
+        surf.blit(text_surface, text_rect)
+
+        text_surface = font.render('Shields (s): ' + str(shield_count), True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (68, 25)
+        surf.blit(text_surface, text_rect)
 
 
     # ЗАГРУЗКА УРОВНЯ
@@ -117,6 +131,9 @@ while True:
 
             draw_seconds(sc, 'time: ' + f'{minutes}:{seconds}', 30, 922, 2)
 
+            # ОТРИСОВКА БУСТОВ И ЩИТОВ
+            draw_boosts_shields(sc)
+
             # РИСОВКА СЧЁТА
             pygame.draw.rect(sc, GREEN, (850, 40, 950, 60))
             draw_text(sc, str(score), 40, 950, 50)
@@ -135,15 +152,18 @@ while True:
         wall_group.draw(sc)  # стены
         obstacle_group.draw(sc)  # ящики
         coin_group.draw(sc)  # монетки
+        boost_group.draw(sc) # бусты 
+        shield_group.draw(sc)
+        telecoin_group.draw(sc)
         picture_group.draw(sc)  # картинки
         exits_group.draw(sc)  # выходы
         mobs_group.draw(sc)  # противник
         player_group.draw(sc)  # игрок
 
-
     # КОНЕЦ ИГРЫ
     def end_game():  # проверка: надо ли заканчивать игру
         global run
+        global shielded
 
         if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
             f = open('data/result.txt', 'r', encoding='utf-8')
@@ -160,19 +180,20 @@ while True:
             show_end_menu(1)
             run = False
 
-        elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
-            f = open('data/result.txt', 'r', encoding='utf-8')
-            text = f.read()
-            f.close()
-            os.remove('data/result.txt')
-            f = open('data/result.txt', 'w', encoding='utf-8')
-            f.write(f'{nickname}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
-                    f'/{score}/Fail\n{text}')
+        elif not shielded:  # смерть персоонажа
+            if pygame.sprite.spritecollide(player, mobs_group, True): 
+                f = open('data/result.txt', 'r', encoding='utf-8')
+                text = f.read()
+                f.close()
+                os.remove('data/result.txt')
+                f = open('data/result.txt', 'w', encoding='utf-8')
+                f.write(f'{nickname}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                        f'/{score}/Fail\n{text}')
 
-            f.close()
+                f.close()
 
-            show_end_menu(0)
-            run = False
+                show_end_menu(0)
+                run = False
 
     # ГЛАВНОЕ МЕНЮ
     def show_menu():
@@ -347,7 +368,7 @@ while True:
 
                             textsurface = myfont.render('  НИК     ВРЕМЯ ИГРЫ     МОНЕТЫ     ИТОГ', False, (255, 255, 255))
                             sc.blit(textsurface, (10, 25))
-
+ 
                             for index, record in enumerate(records[:10]):
                                 # record: дата и время начала игры, время самой игры, кол-во монеток, итог игры
                                 textsurface = myfont.render(f'{record[0]}         {record[1]}                    {record[2]}             {record[3][:-1]}', False, (255, 255, 255))
@@ -358,7 +379,7 @@ while True:
 
                     elif event_1.key == pygame.K_ESCAPE:
                         exit(0)
-
+            
             image = pygame.image.load(f'{directory}/start_menu/main_menu_test.png')
             rect = image.get_rect(bottomright=(W, H))
             sc.blit(image, rect)
@@ -572,6 +593,29 @@ while True:
             self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
             self.rect = self.image.get_rect().move(x, y)
 
+    # ОБЪЕКТ БУСТ
+    class Boost(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename) -> None:
+            super().__init__(boost_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (128, 128))
+            self.rect = self.image.get_rect().move(x, y)
+
+    # ОБЪЕКТ ЩИТ
+    class Shield(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename) -> None:
+            super().__init__(shield_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (128, 128))
+            self.rect = self.image.get_rect().move(x, y)
+
+    # ОБЪЕКТ ТЕЛЕПОРТ
+    class Telecoin(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename) -> None:
+            super().__init__(telecoin_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (128, 128))
+            self.rect = self.image.get_rect().move(x, y)
 
     # ГРУППЫ СПРАЙТОВ
     picture_group = pygame.sprite.Group()  # picture
@@ -583,6 +627,9 @@ while True:
     obstacle_group = pygame.sprite.Group()  # obstacle
     tiles_group = pygame.sprite.Group()  # tiles
     player_group = pygame.sprite.Group()  # player
+    boost_group = pygame.sprite.Group() # boosts
+    shield_group = pygame.sprite.Group() # shields
+    telecoin_group = pygame.sprite.Group() # teleports
     all_sprites = pygame.sprite.Group()  # all sprite
 
     # ГЕНЕРАЦИЯ КАРТЫ
@@ -612,7 +659,22 @@ while True:
         money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
         while pygame.sprite.spritecollide(money, obstacle_group, True):
             money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')
-
+        
+    for i in range(3):
+        boost = Boost(random.randint(630, 3650), random.randint(200, 2300), 'boost.png')
+        while pygame.sprite.spritecollide(boost, obstacle_group, True):
+            boost = Boost(random.randint(630, 3650), random.randint(200, 2300), 'boost.png')
+    
+    for i in range(3):
+        shield = Shield(random.randint(630, 3650), random.randint(200, 2300), 'boost_shield.png')
+        while pygame.sprite.spritecollide(shield, obstacle_group, True):
+            shield = Shield(random.randint(630, 3650), random.randint(200, 2300), 'boost_shield.png')
+    
+    for i in range(3):
+        telecoin = Telecoin(random.randint(630, 3650), random.randint(200, 2300), 'boost_teleport.png')
+        while pygame.sprite.spritecollide(shield, obstacle_group, True):
+            telecoin = Telecoin(random.randint(630, 3650), random.randint(200, 2300), 'boost_teleport.png')
+            
     for i in range(50):  # генерация ящиков
         n = random.randint(1, 3)
         if n == 1:
@@ -656,8 +718,14 @@ while True:
         count = 0  # ход анимации
         animation = 0  # номер картинки в анимации
         speed_animation = 6  # скорость обновления картинок (чем больше тем медленнее)
+        player_speed = 3
         step_count = 0
         step_speed = 15
+        timer = -1
+        shield_timer = -1
+        shielded = False
+        boost_count = 0
+        shield_count = 0
 
         walk_right = [pygame.transform.scale(pygame.image.load(f'data/walk/character_walk_{i}.png'),
                                              (76, 86)) for i in range(quantity_images)]  # список картинок
@@ -699,6 +767,18 @@ while True:
                         pygame.mixer.music.pause()
                     if event.key == pygame.K_EQUALS:  # нажатие "=" продолжает играть музыка
                         pygame.mixer.music.unpause()
+                    if event.key == pygame.K_b:
+                        if boost_count >= 1:
+                            speed_animation -= 3
+                            step_speed -= 4
+                            player_speed += 2
+                            timer += 100
+                            boost_count -= 1
+                    if event.key == pygame.K_s:
+                        if shield_count >= 1:
+                            shielded = True
+                            shield_timer += 200
+                            shield_count -= 1
                     if event.key == pygame.K_h:  # помощь
                         score = 5
 
@@ -717,7 +797,22 @@ while True:
             # ПРОВЕРКИ РАЗНЫХ СОБЫТИЙ ВНУТРИ ИГРЫ
             if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
                 score += 1
+            
+            if pygame.sprite.spritecollide(player, boost_group, True):
+                boost_count += 1
 
+            if pygame.sprite.spritecollide(player, shield_group, True):
+                shield_count += 1
+
+            if pygame.sprite.spritecollide(player, telecoin_group, True):
+                x, y = player.rect.x, player.rect.y 
+                player.rect.x = x + random.randint(-50, 50)
+                player.rect.y = x + random.randint(-50, 50)
+                while pygame.sprite.spritecollide(player, obstacle_group, False):
+                    player.rect.x = x + random.randint(-50, 50)
+                    player.rect.y = y + random.randint(-50, 50)
+                    
+                
             # ОБНОВЛЕНИЕ КАМЕРЫ
             camera.update(player)  # сама камера
 
@@ -735,8 +830,24 @@ while True:
             # ПЕРЕМЕЩЕНИЕ СУЩНОСТЕЙ
             opponent.update()  # враг
 
+            # ПРОВЕРКА БУСТА
+            if timer >= 0:
+                if timer % 100 == 0:
+                    player_speed -= 2
+                    step_speed += 4
+                    speed_animation += 3
+
+                timer -= 1
+            
+            # ПРОВЕРКА ЩИТА
+            if shield_timer >= 0:
+                if shield_timer % 200 == 0:
+                    shielded = False
+                
+                shield_timer -= 1
+
             opponent.animation()
-            if count_enemy == speed_animation_enemy:
+            if count_enemy >= speed_animation_enemy:
                 animation_enemy += 1
                 count_enemy = 0
             count_enemy += 1
@@ -745,18 +856,18 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.x_map_player += 3
+                player.y_map_player -= player_speed
+                player.x_map_player += player_speed
 
-                player.rect.y -= 3
-                player.rect.x += 3
+                player.rect.y -= player_speed
+                player.rect.x += player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -765,18 +876,18 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.x_map_player -= 3
+                player.y_map_player -= player_speed
+                player.x_map_player -= player_speed
 
-                player.rect.y -= 3
-                player.rect.x -= 3
+                player.rect.y -= player_speed
+                player.rect.x -= player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -785,18 +896,18 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.x_map_player += 3
+                player.y_map_player += player_speed
+                player.x_map_player += player_speed
 
-                player.rect.y += 3
-                player.rect.x += 3
+                player.rect.y += player_speed
+                player.rect.x += player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -805,18 +916,18 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.x_map_player -= 3
+                player.y_map_player += player_speed
+                player.x_map_player -= player_speed
 
-                player.rect.y += 3
-                player.rect.x -= 3
+                player.rect.y += player_speed
+                player.rect.x -= player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -825,15 +936,15 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.x_map_player -= 3
-                player.rect.x -= 3
+                player.x_map_player -= player_speed
+                player.rect.x -= player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -842,15 +953,15 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.x_map_player += 3
-                player.rect.x += 3
+                player.x_map_player += player_speed
+                player.rect.x += player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -861,15 +972,15 @@ while True:
                 else:
                     player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.rect.y += 3
+                player.y_map_player += player_speed
+                player.rect.y += player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
@@ -880,15 +991,15 @@ while True:
                 else:
                     player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.rect.y -= 3
+                player.y_map_player -= player_speed
+                player.rect.y -= player_speed
 
-                if count == speed_animation:
+                if count >= speed_animation:
                     animation += 1
                     count = 0
                 count += 1
 
-                if step_count == step_speed:
+                if step_count >= step_speed:
                     step_sound.play()
                     step_count = 0
                 step_count += 1
