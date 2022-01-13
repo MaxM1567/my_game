@@ -37,7 +37,7 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.1.3'  # версия (release)
+    version = '1.1.3'  # версия (develop)
 
     # 1. Монетки больше не появляются в ящиках
     # 2. Кнопка вкл/выкл музыки работает
