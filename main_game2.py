@@ -27,6 +27,7 @@ while True:
     counter_interface = 0  # счётчик интерфейса
     side_character = 'r'
     tile_images = {}  # список плиток для карты
+
     initial_time = datetime.datetime.now()  # время начала игры
     step_sound = 'music'  # инициализировал звуки шагов
     status_sound = False  # надо ли озвучивать шаги
@@ -518,8 +519,8 @@ while True:
                         self.image = pygame.image.load('data/enemy_right_tackle.png').convert_alpha()
 
                         # ПОЗИЦИЯ
-                        self.x_map_enemy += 3  # относительно карты
-                        self.rect.x += 3  # относительно окна игры
+                        self.x_map_enemy += 2  # относительно карты
+                        self.rect.x += 2  # относительно окна игры
                     else:
                         # ИЗОБРАЖЕНИЕ
                         self.image = pygame.image.load('data/enemy_left_tackle.png').convert_alpha()
@@ -643,9 +644,13 @@ while True:
 
     opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
 
-    x_exit = random.randint(15, 85)  # x выхода 1
-    exit_1 = Exit(x_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
-    exit_door = Picture(x_exit, 2.3, 'door_exit.png')  # дверь выхода 1
+    x_door_exit = random.randint(15, 85)  # x выхода 1
+    exit_1 = Exit(x_door_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
+    exit_door = Picture(x_door_exit, 2.3, 'door_exit.png')  # дверь выхода 1
+
+    x_e_exit, y_e_exit = random.randint(14, 80), random.randint(8, 25)
+    exit_2 = Exit(x_e_exit + 0.33, y_e_exit + 0.65, 'door_exit_tablet.png')
+    exit_hatch = Picture(x_e_exit, y_e_exit, 'hatch_exit.png')
 
     camera = Camera()  # создал камеру
 
