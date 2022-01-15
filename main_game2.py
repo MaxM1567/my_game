@@ -21,7 +21,7 @@ while True:
     tile_width = tile_height = 48  # размер одного блока карты
 
     # ПАРАМЕТРЫ
-    sc = pygame.display.set_mode((W, H))  # разсер окна
+    sc = pygame.display.set_mode((W, H))  # размер окна
     clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
     score = 0  # счёт
     counter_interface = 0  # счётчик интерфейса
@@ -31,6 +31,7 @@ while True:
     initial_time = datetime.datetime.now()  # время начала игры
     step_sound = 'music'  # инициализировал звуки шагов
     status_sound = False  # надо ли озвучивать шаги
+    status_scrap = False  # есть ли лом
 
     if language == 'ru':
         directory = 'data/interface/ru'
@@ -38,13 +39,10 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.1.3'  # версия (develop)
+    version = '1.1.4'  # версия (develop)
 
-    # 1. Монетки больше не появляются в ящиках
-    # 2. Кнопка вкл/выкл музыки работает
-    # 3. Кнопка вкл/выкл звуковых эффектов работает (лучше не включать)
-    # 4. Звуковые эффекты и музыка не работают одновременно
-    # 5. Музыка прекращает играть при выходе в главное меню
+    # 1. Добавил второй выход
+    # 2. Добавил баг (не знаю как фиксить)
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -115,7 +113,7 @@ while True:
     # ОТРИСОВКА СПРАЙТОВ НА ЭКРАНЕ
     def draw_sprite_group():
         tiles_group.draw(sc)  # карта
-        wall_border_group.draw(sc)  # граници стен
+        wall_border_group.draw(sc)  # границы стен
         wall_group.draw(sc)  # стены
         obstacle_group.draw(sc)  # ящики
         coin_group.draw(sc)  # монетки
@@ -123,12 +121,13 @@ while True:
         exits_group.draw(sc)  # выходы
         mobs_group.draw(sc)  # противник
         player_group.draw(sc)  # игрок
+        scrap_group.draw(sc)  # лом
 
     # КОНЕЦ ИГРЫ
     def end_game():  # проверка: надо ли заканчивать игру
         global run
 
-        if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода
+        if pygame.sprite.spritecollide(player, exits_group, False) and status_scrap:  # активация выхода через люк
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
@@ -143,7 +142,22 @@ while True:
             show_end_menu(1)
             run = False
 
-        elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персоонажа
+        if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода через дверь
+            f = open('data/result.txt', 'r')
+            text = f.read()
+            f.close()
+
+            os.remove('data/result.txt')
+
+            f = open('data/result.txt', 'w')
+            f.write(f'{str(datetime.datetime.now())[:16]}/{(str(datetime.datetime.now() - initial_time))[2:7]}'
+                    f'/{score}/Win\n{text}')
+            f.close()
+
+            show_end_menu(1)
+            run = False
+
+        elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персонажа
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
@@ -180,7 +194,7 @@ while True:
                 if event_1.type == pygame.KEYDOWN:
 
                     # ЗАПУСК РАЗНЫХ МЕНЮ
-                    if event_1.key == pygame.K_l:  # меню выбоа уровня
+                    if event_1.key == pygame.K_l:  # меню выбора уровня
                         # ПАРАМЕТРЫ
                         show_level = True
 
@@ -381,12 +395,12 @@ while True:
         global language
 
         # ОТОБРАЗИЛ ИНТЕРФЕЙС
-        if result == 1:  # выиигрышь или поражение
+        if result == 1:  # выигрыш или поражение
             image = pygame.image.load(f'{directory}/end_menu/end_menu_win.png')
         elif result == 0:
             image = pygame.image.load(f'{directory}/end_menu/end_menu_fail.png')
         rect = image.get_rect(bottomright=(W, H))
-        sc.blit(image, rect)  # нарисовал финальный мнтерфейс
+        sc.blit(image, rect)  # нарисовал финальный интерфейс
 
         # ОТРИСОВКА РЕЗУЛЬТАТОВ
         font = pygame.font.Font(font_name, 40)  # счёт
@@ -445,6 +459,13 @@ while True:
             self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
             self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
 
+    # ОБЪЕКТ ЛОМ
+    class Scrap(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename):
+            super().__init__(scrap_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
+
     # ОБЪЕКТ ЕДИНИЧНАЯ ПЛИТКА
     class Tile(pygame.sprite.Sprite):
         def __init__(self, tile_type, pos_x, pos_y):
@@ -488,7 +509,7 @@ while True:
             self.x_map_player = 1
             self.y_map_player = 1
 
-            # предидущая
+            # предыдущая
             self.x_last = 1
             self.y_last = 1
 
@@ -534,15 +555,15 @@ while True:
                         self.image = pygame.image.load('data/enemy_right.png').convert_alpha()
 
                         # ПОЗИЦИЯ
-                        self.x_map_enemy += 2  # относительно карты
-                        self.rect.x += 2  # относительно окна игры
+                        self.x_map_enemy += 1.5  # относительно карты
+                        self.rect.x += 1.5  # относительно окна игры
                     else:
                         # ИЗОБРАЖЕНИЕ
                         self.image = pygame.image.load('data/enemy_left.png').convert_alpha()
 
                         # ПОЗИЦИЯ
-                        self.x_map_enemy -= 2  # относительно карты
-                        self.rect.x -= 2  # относительно окна игры
+                        self.x_map_enemy -= 1.5  # относительно карты
+                        self.rect.x -= 1.5  # относительно окна игры
             else:
                 pass
 
@@ -559,12 +580,12 @@ while True:
                 else:  # столкновение с ящиком: False
                     if self.rect.y < player.rect.y:
                         # ПОЗИЦИЯ
-                        self.y_map_enemy += 2  # относительно карты
-                        self.rect.y += 2  # относительно окна игры
+                        self.y_map_enemy += 1.5  # относительно карты
+                        self.rect.y += 1.5  # относительно окна игры
                     else:
                         # ПОЗИЦИЯ
-                        self.y_map_enemy -= 2  # относительно карты
-                        self.rect.y -= 2  # относительно окна игры
+                        self.y_map_enemy -= 1.5  # относительно карты
+                        self.rect.y -= 1.5  # относительно окна игры
             else:
                 pass
 
@@ -584,6 +605,7 @@ while True:
 
 
     # ГРУППЫ СПРАЙТОВ
+    scrap_group = pygame.sprite.Group()
     picture_group = pygame.sprite.Group()  # picture
     wall_border_group = pygame.sprite.Group()
     wall_group = pygame.sprite.Group()  # wall
@@ -612,6 +634,8 @@ while True:
     show_menu()
 
     # СОЗДАНИЕ СПРАЙТОВ
+
+    # стены
     wall_top = Wall(12.7, 0.9, 'wall_top_2.png')  # верхняя стена
     exit_door_border = Wall_border(12.7, 3, 'wall_top_border.png')  # граница верхней стены
 
@@ -619,6 +643,7 @@ while True:
     wall_left = Wall_border(90.7, 0.9, 'wall_right.png')  # левая стена
     wall_bot = Wall_border(12.7, 48.9, 'wall_bot.png')  # нижняя стена
 
+    # ящики
     for i in range(60):  # генерация ящиков
         n = random.randint(1, 3)  # цвет ящиков
         if n == 1:
@@ -626,33 +651,54 @@ while True:
         else:
             obstacle = Obstacle(random.randint(14, 85), random.randint(8, 47), 'obstacle_2.png')
 
-    for i in range(5):  # генерация монеток
+    # выход на канализационном люке
+    x_e_exit, y_e_exit = random.randint(14, 88), random.randint(35, 45)
+    exit_2 = Exit(x_e_exit + 0.33, y_e_exit + 0.65, 'door_exit_tablet.png')
+    exit_hatch = Picture(x_e_exit, y_e_exit, 'hatch_exit.png')
+
+    if pygame.sprite.spritecollide(exit_hatch, obstacle_group, False):
+        while pygame.sprite.spritecollide(exit_hatch, obstacle_group, False):
+            exit_2.rect.x = random.randint(14, 80)
+            exit_2.rect.y = random.randint(65, 75)
+
+            exit_hatch.rect.x = exit_2.rect.x
+            exit_hatch.rect.y = exit_2.rect.y
+
+    # лом
+    scrap = Scrap(random.randint(15, 85), random.randint(5, 47), 'scrap.png')
+    if pygame.sprite.spritecollide(scrap, obstacle_group, False):  # появился ли игрок в ящике
+        while pygame.sprite.spritecollide(scrap, obstacle_group, False):
+            scrap.rect.x = random.randint(15, 85)  # новый x
+            scrap.rect.y = random.randint(5, 47)  # новый y
+
+    # генерация монеток
+    for i in range(5):
         money = Coin(random.randint(630, 3650), random.randint(200, 2300), 'money.png')  # если монета в ящике
         if pygame.sprite.spritecollide(money, obstacle_group, False):
             while pygame.sprite.spritecollide(money, obstacle_group, False):
                 money.rect.x = random.randint(630, 3750)  # новый x
                 money.rect.y = random.randint(200, 2300)  # новый y
 
-    player = Player(30, 15, 'character_right.png')  # создание главного героя
-    if pygame.sprite.spritecollide(player, obstacle_group, False):  # заспавнился ли игрок в ящике
+    # создание главного героя
+    player = Player(random.randint(15, 85), random.randint(5, 47), 'character_right.png')
+    if pygame.sprite.spritecollide(player, obstacle_group, False):  # появился ли игрок в ящике
         while pygame.sprite.spritecollide(player, obstacle_group, False):
-            new_x = random.randint(100, 500)  # новый x
-            new_y = random.randint(100, 300)  # новый y
+            player.rect.x = random.randint(15, 85)  # новый x
+            player.rect.y = random.randint(5, 47)  # новый y
 
-            player.rect.x += new_x
-            player.rect.y += new_y
+    player.x_map_player = player.rect.x
+    player.y_map_player = player.rect.y
 
-    opponent = Enemy(random.randint(14, 80), random.randint(8, 25), 'enemy_left.png')  # создание врага
+    # создание врага
+    opponent = Enemy(random.randint(15, 85), random.randint(5, 47), 'enemy_left.png')
 
-    x_door_exit = random.randint(15, 85)  # x выхода 1
+    # x выхода через дверь
+    x_door_exit = random.randint(15, 85)
     exit_1 = Exit(x_door_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
     exit_door = Picture(x_door_exit, 2.3, 'door_exit.png')  # дверь выхода 1
 
-    x_e_exit, y_e_exit = random.randint(14, 80), random.randint(8, 25)
-    exit_2 = Exit(x_e_exit + 0.33, y_e_exit + 0.65, 'door_exit_tablet.png')
-    exit_hatch = Picture(x_e_exit, y_e_exit, 'hatch_exit.png')
-
-    camera = Camera()  # создал камеру
+    # создал камеру
+    camera = Camera()
 
     # НАЧАЛО ПРОГРАММЫ
     if __name__ == '__main__':
@@ -662,7 +708,7 @@ while True:
 
         # ПАРАМЕТРЫ АНИМАЦИИ ПЕРСООНАЖЕЙ
 
-        # персоонаж
+        # персонаж
         quantity_images = 4  # количество картинок
         count = 0  # ход анимации
         animation = 0  # номер картинки в анимации
@@ -723,20 +769,30 @@ while True:
                         score = 5
 
             # ОБНАРУЖЕНИЕ СТОЛКНОВЕНИЙ
-            if pygame.sprite.spritecollide(player, wall_border_group, False):  # персоонаж
+            if pygame.sprite.spritecollide(player, wall_border_group, False):  # персонаж
                 player.rect.x += (player.x_last - player.x_map_player)
                 player.rect.y += (player.y_last - player.y_map_player)
 
-            if pygame.sprite.spritecollide(player, obstacle_group, False):  # персоонаж
+            if pygame.sprite.spritecollide(player, obstacle_group, False):  # персонаж
                 player.rect.x += (player.x_last - player.x_map_player)
                 player.rect.y += (player.y_last - player.y_map_player)
 
-            player.x_last = player.x_map_player  # x персоонажа до столкновения
-            player.y_last = player.y_map_player  # y персоонажа до столкновения
+            player.x_last = player.x_map_player  # x персонажа до столкновения
+            player.y_last = player.y_map_player  # y персонажа до столкновения
 
             # ПРОВЕРКИ РАЗНЫХ СОБЫТИЙ ВНУТРИ ИГРЫ
+            if pygame.sprite.spritecollide(player, scrap_group, False):
+                status_scrap = True
+                scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
+
             if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
                 score += 1
+
+            if status_scrap:
+                if side_character == 'r':
+                    scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
+                else:
+                    scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_right.png')).convert_alpha()
 
             # ОБНОВЛЕНИЕ КАМЕРЫ
             camera.update(player)  # сама камера
@@ -750,7 +806,7 @@ while True:
 
             # КАКИЕ-ТО ВАЖНЫЙ ШТУКИ
             pygame.display.flip()  # флип
-            keys = pygame.key.get_pressed()  # список нажимаемых клавишь
+            keys = pygame.key.get_pressed()  # список нажимаемых клавиш
 
             # ПЕРЕМЕЩЕНИЕ СУЩНОСТЕЙ
             opponent.update()  # враг
@@ -902,6 +958,10 @@ while True:
                     player.image = walk_right[0]
                 else:
                     player.image = walk_left[0]
+
+            if status_scrap:
+                scrap.rect.x = player.rect.x
+                scrap.rect.y = player.rect.y + 20
 
             end_game()  # проверка окончания игры
 
