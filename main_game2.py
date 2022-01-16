@@ -49,7 +49,7 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.3.1'  # версия
+    version = '1.3.2'  # версия
 
     # 1. Добавил звуковые эффекты
     # 2. Переделал систему воспроизведения музыки
@@ -826,7 +826,8 @@ while True:
                 scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
 
             if pygame.sprite.spritecollide(player, booster_group, True):  # нашёл бустер скорости
-                speed_boost_sound.play()
+                if status_sound:
+                    speed_boost_sound.play()
                 status_boost = True
 
             if status_boost:  # бустер скорости подействовал
