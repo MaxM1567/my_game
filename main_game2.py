@@ -49,7 +49,7 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.3.0'  # версия
+    version = '1.3.1'  # версия
 
     # 1. Добавил звуковые эффекты
     # 2. Переделал систему воспроизведения музыки
@@ -787,7 +787,7 @@ while True:
         if (status_sound_all.split('/'))[2] == 'on':
             step_sound = pygame.mixer.Sound('data/run_player.ogg')  # звуки шагов
             money_sound = pygame.mixer.Sound('data/money_plus.ogg')  # начисление монеток
-            speed_boost_sound = pygame.mixer.Sound('data/speed_boost_sound.ogg')  # начисление монеток
+            speed_boost_sound = pygame.mixer.Sound('data/money_plus.ogg')  # подбор бустера
             status_sound = True
         else:
             status_sound = False
@@ -805,10 +805,6 @@ while True:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_o:  # вид интерфейса
                         counter_interface += 1
-                    if event.key == pygame.K_MINUS:  # нажатие "-" ставит музыку на паузу
-                        pygame.mixer.music.pause()
-                    if event.key == pygame.K_EQUALS:  # нажатие "=" продолжает играть музыка
-                        pygame.mixer.music.unpause()
                     if event.key == pygame.K_h:  # помощь
                         score = 5
 
@@ -834,7 +830,7 @@ while True:
                 status_boost = True
 
             if status_boost:  # бустер скорости подействовал
-                if counter_boost <= 300:
+                if counter_boost < 300:
                     counter_boost += 1
                 else:
                     counter_boost = 0
