@@ -31,10 +31,17 @@ while True:
     tile_images = {}  # список плиток для карты
 
     initial_time = datetime.datetime.now()  # время начала игры
-    step_sound = 'music'  # инициализировал звуки шагов
+    music_sound = ''
+    money_sound = ''
+    step_sound = ''
+    speed_boost_sound = ''
+
+    status_exit = False
+
     status_sound = False  # надо ли озвучивать шаги
     status_scrap = False  # есть ли лом
     status_boost = False  # есть ли лом
+    status_music = False
 
     if language == 'ru':
         directory = 'data/interface/ru'
@@ -42,11 +49,12 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.2.4'  # версия (develop)
+    version = '1.3.0'  # версия
 
-    # 1. Добавил бонусы скорости, которые разбросаны по карте
-    # 2. Незначительная оптимизации кода
-    # 3. Не исправил странный баг из прошлого обновления
+    # 1. Добавил звуковые эффекты
+    # 2. Переделал систему воспроизведения музыки
+    # 3. Незначительная оптимизации кода
+    # 4. Не исправил странный баг из прошлого обновления
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -132,7 +140,8 @@ while True:
     def end_game():  # проверка: надо ли заканчивать игру
         global run
 
-        if pygame.sprite.spritecollide(player, exits_group, False) and status_scrap:  # активация выхода через люк
+        # активация выхода через дверь
+        if pygame.sprite.spritecollide(exit_1, player_group, False) and score == 5:
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
@@ -147,7 +156,8 @@ while True:
             show_end_menu(1)
             run = False
 
-        if pygame.sprite.spritecollide(player, exits_group, False) and score == 5:  # активация выхода через дверь
+        # активация выхода через люк
+        elif pygame.sprite.spritecollide(exit_2, player_group, False) and status_scrap:
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
@@ -162,7 +172,8 @@ while True:
             show_end_menu(1)
             run = False
 
-        elif pygame.sprite.spritecollide(player, mobs_group, True):  # смерть персонажа
+        # смерть персонажа
+        elif pygame.sprite.spritecollide(player, mobs_group, True):
             f = open('data/result.txt', 'r')
             text = f.read()
             f.close()
@@ -441,7 +452,8 @@ while True:
                     if event_1.key == pygame.K_ESCAPE:
                         show = False
 
-        pygame.mixer.music.stop()
+        if status_music:
+            music_sound.stop()
 
     # ОБЪЕКТ ГРАНИЦА СТНЕЫ
     class Wall_border(pygame.sprite.Sprite):
@@ -677,15 +689,12 @@ while True:
             exit_hatch.rect.x = exit_2.rect.x
             exit_hatch.rect.y = exit_2.rect.y
 
-    print(exit_2.rect.x, exit_2.rect.y)
-
     # лом
     scrap = Scrap(random.randint(15, 85), random.randint(5, 47), 'scrap.png')
     if pygame.sprite.spritecollide(scrap, obstacle_group, False):  # появился ли игрок в ящике
         while pygame.sprite.spritecollide(scrap, obstacle_group, False):
             scrap.rect.x = random.randint(15, 85)  # новый x
             scrap.rect.y = random.randint(5, 47)  # новый y
-    print(scrap.rect.x, scrap.rect.y)
 
     # генерация монеток
     for i in range(5):
@@ -739,9 +748,12 @@ while True:
 
         # персонаж
         quantity_images = 4  # количество картинок
+        count_step_sound = 0  # ход шагов
+
         count = 0  # ход анимации
         animation = 0  # номер картинки в анимации
         speed_animation = 6  # скорость обновления картинок (чем больше тем медленнее)
+        speed_step_sound = 18
 
         walk_right = [pygame.transform.scale(pygame.image.load(f'data/walk/character_walk_{i}.png'),
                                              (76, 86)) for i in range(quantity_images)]  # список картинок
@@ -765,15 +777,17 @@ while True:
 
         # МУЗЫКА
         file = open('data/language.txt', 'r')
-        status_sound = file.read()
+        status_sound_all = file.read()
 
-        if (status_sound.split('/'))[1] == 'on':
-            pygame.mixer.music.load('data/music.mp3')  # музыка
-            pygame.mixer.music.play()
-            pygame.mixer.music.set_volume(15)
+        if (status_sound_all.split('/'))[1] == 'on':
+            music_sound = pygame.mixer.Sound('data/music.ogg')
+            music_sound.play()
+            status_music = True
 
-        if (status_sound.split('/'))[2] == 'on':
-            step_sound = pygame.mixer.Sound('data/run.mp3')
+        if (status_sound_all.split('/'))[2] == 'on':
+            step_sound = pygame.mixer.Sound('data/run_player.ogg')  # звуки шагов
+            money_sound = pygame.mixer.Sound('data/money_plus.ogg')  # начисление монеток
+            speed_boost_sound = pygame.mixer.Sound('data/speed_boost_sound.ogg')  # начисление монеток
             status_sound = True
         else:
             status_sound = False
@@ -783,6 +797,7 @@ while True:
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
         while run:
+
             # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -814,10 +829,11 @@ while True:
                 status_scrap = True
                 scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
 
-            if pygame.sprite.spritecollide(player, booster_group, True):
+            if pygame.sprite.spritecollide(player, booster_group, True):  # нашёл бустер скорости
+                speed_boost_sound.play()
                 status_boost = True
 
-            if status_boost:
+            if status_boost:  # бустер скорости подействовал
                 if counter_boost <= 300:
                     counter_boost += 1
                 else:
@@ -825,9 +841,11 @@ while True:
                     status_boost = False
 
             if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
+                if status_sound:
+                    money_sound.play()
                 score += 1
 
-            if status_scrap:
+            if status_scrap:  # нашёл лом
                 if side_character == 'r':
                     scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
                 else:
@@ -858,13 +876,13 @@ while True:
 
             if status_boost:
                 move_speed_player = 4
+                speed_step_sound = 12
             else:
                 move_speed_player = 3
+                speed_step_sound = 18
 
-            if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:  # игрок
-                if status_sound:
-                    step_sound.play()
-
+            # игрок
+            if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -878,11 +896,15 @@ while True:
                     animation += 1
                     count = 0
                 count += 1
+
+                # звуки шагов
+                if status_sound:
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
             elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
-                if status_sound:
-                    step_sound.play()
-
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -896,11 +918,15 @@ while True:
                     animation += 1
                     count = 0
                 count += 1
+
+                # звуки шагов
+                if status_sound:
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_RIGHT]:
-                if status_sound:
-                    step_sound.play()
-
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -914,11 +940,15 @@ while True:
                     animation += 1
                     count = 0
                 count += 1
+
+                # звуки шагов
+                if status_sound:
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
             elif keys[pygame.K_DOWN] and keys[pygame.K_LEFT]:
-                if status_sound:
-                    step_sound.play()
-
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -933,10 +963,14 @@ while True:
                     count = 0
                 count += 1
 
-            elif keys[pygame.K_LEFT]:
+                # звуки шагов
                 if status_sound:
-                    step_sound.play()
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
+            elif keys[pygame.K_LEFT]:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
@@ -948,10 +982,14 @@ while True:
                     count = 0
                 count += 1
 
-            elif keys[pygame.K_RIGHT]:
+                # звуки шагов
                 if status_sound:
-                    step_sound.play()
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
+            elif keys[pygame.K_RIGHT]:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
@@ -963,10 +1001,14 @@ while True:
                     count = 0
                 count += 1
 
-            elif keys[pygame.K_DOWN]:
+                # звуки шагов
                 if status_sound:
-                    step_sound.play()
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
+            elif keys[pygame.K_DOWN]:
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
@@ -980,10 +1022,14 @@ while True:
                     count = 0
                 count += 1
 
-            elif keys[pygame.K_UP]:
+                # звуки шагов
                 if status_sound:
-                    step_sound.play()
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
+            elif keys[pygame.K_UP]:
                 if side_character == 'r':
                     player.image = walk_right[animation % quantity_images]
                 else:
@@ -996,6 +1042,13 @@ while True:
                     animation += 1
                     count = 0
                 count += 1
+
+                # звуки шагов
+                if status_sound:
+                    if count_step_sound == speed_step_sound:
+                        step_sound.play()
+                        count_step_sound = 0
+                    count_step_sound += 1
 
             else:
                 if side_character == 'r':
