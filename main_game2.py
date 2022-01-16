@@ -25,6 +25,8 @@ while True:
     clock = pygame.time.Clock()  # какие-то часы (связанно с FPS)
     score = 0  # счёт
     counter_interface = 0  # счётчик интерфейса
+    counter_boost = 0  # счётчик бонусов
+    move_speed_player = 3
     side_character = 'r'
     tile_images = {}  # список плиток для карты
 
@@ -32,6 +34,7 @@ while True:
     step_sound = 'music'  # инициализировал звуки шагов
     status_sound = False  # надо ли озвучивать шаги
     status_scrap = False  # есть ли лом
+    status_boost = False  # есть ли лом
 
     if language == 'ru':
         directory = 'data/interface/ru'
@@ -39,10 +42,11 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.1.4'  # версия (develop)
+    version = '1.2.4'  # версия (develop)
 
-    # 1. Добавил второй выход
-    # 2. Добавил баг (не знаю как фиксить)
+    # 1. Добавил бонусы скорости, которые разбросаны по карте
+    # 2. Незначительная оптимизации кода
+    # 3. Не исправил странный баг из прошлого обновления
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -117,6 +121,7 @@ while True:
         wall_group.draw(sc)  # стены
         obstacle_group.draw(sc)  # ящики
         coin_group.draw(sc)  # монетки
+        booster_group.draw(sc)
         picture_group.draw(sc)  # картинки
         exits_group.draw(sc)  # выходы
         mobs_group.draw(sc)  # противник
@@ -603,9 +608,17 @@ while True:
             self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
             self.rect = self.image.get_rect().move(x, y)
 
+    # ОБЪЕКТ МОНЕТА
+    class Speed_booster(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename):
+            super().__init__(booster_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.rect = self.image.get_rect().move(x, y)
+
 
     # ГРУППЫ СПРАЙТОВ
-    scrap_group = pygame.sprite.Group()
+    booster_group = pygame.sprite.Group()  # booster
+    scrap_group = pygame.sprite.Group()  # scrap
     picture_group = pygame.sprite.Group()  # picture
     wall_border_group = pygame.sprite.Group()
     wall_group = pygame.sprite.Group()  # wall
@@ -664,12 +677,15 @@ while True:
             exit_hatch.rect.x = exit_2.rect.x
             exit_hatch.rect.y = exit_2.rect.y
 
+    print(exit_2.rect.x, exit_2.rect.y)
+
     # лом
     scrap = Scrap(random.randint(15, 85), random.randint(5, 47), 'scrap.png')
     if pygame.sprite.spritecollide(scrap, obstacle_group, False):  # появился ли игрок в ящике
         while pygame.sprite.spritecollide(scrap, obstacle_group, False):
             scrap.rect.x = random.randint(15, 85)  # новый x
             scrap.rect.y = random.randint(5, 47)  # новый y
+    print(scrap.rect.x, scrap.rect.y)
 
     # генерация монеток
     for i in range(5):
@@ -678,6 +694,19 @@ while True:
             while pygame.sprite.spritecollide(money, obstacle_group, False):
                 money.rect.x = random.randint(630, 3750)  # новый x
                 money.rect.y = random.randint(200, 2300)  # новый y
+
+    # генерация бонусов
+    for i in range(3):
+        speed_booster = Speed_booster(random.randint(630, 3650), random.randint(200, 2300), 'speed_boost.png')
+
+        if pygame.sprite.spritecollide(speed_booster, obstacle_group, False)\
+                or pygame.sprite.spritecollide(speed_booster, mobs_group, False):
+
+            while pygame.sprite.spritecollide(speed_booster, obstacle_group, False)\
+                    or pygame.sprite.spritecollide(speed_booster, mobs_group, False):
+
+                speed_booster.rect.x = random.randint(630, 3750)  # новый x
+                speed_booster.rect.y = random.randint(200, 2300)  # новый y
 
     # создание главного героя
     player = Player(random.randint(15, 85), random.randint(5, 47), 'character_right.png')
@@ -781,9 +810,19 @@ while True:
             player.y_last = player.y_map_player  # y персонажа до столкновения
 
             # ПРОВЕРКИ РАЗНЫХ СОБЫТИЙ ВНУТРИ ИГРЫ
-            if pygame.sprite.spritecollide(player, scrap_group, False):
+            if pygame.sprite.spritecollide(player, scrap_group, False):  # нашёл лом
                 status_scrap = True
                 scrap.image = pygame.image.load(os.path.join('data', 'scrap_arm_left.png')).convert_alpha()
+
+            if pygame.sprite.spritecollide(player, booster_group, True):
+                status_boost = True
+
+            if status_boost:
+                if counter_boost <= 300:
+                    counter_boost += 1
+                else:
+                    counter_boost = 0
+                    status_boost = False
 
             if pygame.sprite.spritecollide(player, coin_group, True):  # начисление счёта за нахождение монетки
                 score += 1
@@ -817,6 +856,11 @@ while True:
                 count_enemy = 0
             count_enemy += 1
 
+            if status_boost:
+                move_speed_player = 4
+            else:
+                move_speed_player = 3
+
             if keys[pygame.K_UP] and keys[pygame.K_RIGHT]:  # игрок
                 if status_sound:
                     step_sound.play()
@@ -824,11 +868,11 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.x_map_player += 3
+                player.y_map_player -= move_speed_player
+                player.x_map_player += move_speed_player
 
-                player.rect.y -= 3
-                player.rect.x += 3
+                player.rect.y -= move_speed_player
+                player.rect.x += move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -842,11 +886,11 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.x_map_player -= 3
+                player.y_map_player -= move_speed_player
+                player.x_map_player -= move_speed_player
 
-                player.rect.y -= 3
-                player.rect.x -= 3
+                player.rect.y -= move_speed_player
+                player.rect.x -= move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -860,11 +904,11 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.x_map_player += 3
+                player.y_map_player += move_speed_player
+                player.x_map_player += move_speed_player
 
-                player.rect.y += 3
-                player.rect.x += 3
+                player.rect.y += move_speed_player
+                player.rect.x += move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -878,11 +922,11 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.x_map_player -= 3
+                player.y_map_player += move_speed_player
+                player.x_map_player -= move_speed_player
 
-                player.rect.y += 3
-                player.rect.x -= 3
+                player.rect.y += move_speed_player
+                player.rect.x -= move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -896,8 +940,8 @@ while True:
                 side_character = 'l'
                 player.image = walk_left[animation % quantity_images]
 
-                player.x_map_player -= 3
-                player.rect.x -= 3
+                player.x_map_player -= move_speed_player
+                player.rect.x -= move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -911,8 +955,8 @@ while True:
                 side_character = 'r'
                 player.image = walk_right[animation % quantity_images]
 
-                player.x_map_player += 3
-                player.rect.x += 3
+                player.x_map_player += move_speed_player
+                player.rect.x += move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -928,8 +972,8 @@ while True:
                 else:
                     player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player += 3
-                player.rect.y += 3
+                player.y_map_player += move_speed_player
+                player.rect.y += move_speed_player
 
                 if count == speed_animation:
                     animation += 1
@@ -945,8 +989,8 @@ while True:
                 else:
                     player.image = walk_left[animation % quantity_images]
 
-                player.y_map_player -= 3
-                player.rect.y -= 3
+                player.y_map_player -= move_speed_player
+                player.rect.y -= move_speed_player
 
                 if count == speed_animation:
                     animation += 1
