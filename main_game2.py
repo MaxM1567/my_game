@@ -31,17 +31,18 @@ while True:
     tile_images = {}  # список плиток для карты
 
     initial_time = datetime.datetime.now()  # время начала игры
+
     music_sound = ''
     money_sound = ''
     step_sound = ''
     speed_boost_sound = ''
 
-    status_exit = False
+    status_exit = False  # выход через люк
 
     status_sound = False  # надо ли озвучивать шаги
     status_scrap = False  # есть ли лом
     status_boost = False  # есть ли лом
-    status_music = False
+    status_music = False  # музыка вкл/выкл
 
     if language == 'ru':
         directory = 'data/interface/ru'
@@ -49,9 +50,9 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.3.3'  # версия
+    version = '1.3.4'  # версия
 
-    # 1. Исправил баг из-за, которого при подборе бустера пропадали звуки шагов.
+    # 1. Добавил затемнение
     # 2. Незначительная оптимизации кода
 
     # ЗАГРУЗКА КАРТИНОК
@@ -128,11 +129,13 @@ while True:
         obstacle_group.draw(sc)  # ящики
         coin_group.draw(sc)  # монетки
         booster_group.draw(sc)
+        fon_group.draw(sc)
         picture_group.draw(sc)  # картинки
         exits_group.draw(sc)  # выходы
         mobs_group.draw(sc)  # противник
         player_group.draw(sc)  # игрок
         scrap_group.draw(sc)  # лом
+        fon_group.draw(sc)
 
     # КОНЕЦ ИГРЫ
     def end_game():  # проверка: надо ли заканчивать игру
@@ -625,6 +628,16 @@ while True:
             self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
             self.rect = self.image.get_rect().move(x, y)
 
+    # TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
+
+    # ОБЪЕКТ МОНЕТА
+    class Fon(pygame.sprite.Sprite):
+        def __init__(self, x, y, filename):
+            super().__init__(fon_group, all_sprites)
+            self.image = pygame.image.load(os.path.join('data', filename)).convert_alpha()
+            self.rect = self.image.get_rect().move(x, y)
+
+    # TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
 
     # ГРУППЫ СПРАЙТОВ
     booster_group = pygame.sprite.Group()  # booster
@@ -639,6 +652,7 @@ while True:
     tiles_group = pygame.sprite.Group()  # tiles
     player_group = pygame.sprite.Group()  # player
     all_sprites = pygame.sprite.Group()  # all sprite
+    fon_group = pygame.sprite.Group()
 
     # ГЕНЕРАЦИЯ КАРТЫ
     def generate_level(level):
@@ -733,6 +747,10 @@ while True:
     exit_1 = Exit(x_door_exit + 0.35, 3.2, 'door_exit_tablet.png')  # выход 1
     exit_door = Picture(x_door_exit, 2.3, 'door_exit.png')  # дверь выхода 1
 
+    # TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
+    dark = Fon(player.rect.x, player.rect.y, 'test.png')
+    # TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
+
     # создал камеру
     camera = Camera()
 
@@ -795,7 +813,6 @@ while True:
         # НАЧАЛО ОСНОВНОГО ЦИКЛА ПРОГРАММЫ
         run = True
         while run:
-
             # ОБНАРУЖЕНИЕ ИВЕНТОВ PYGAME
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -811,9 +828,15 @@ while True:
                 player.rect.x += (player.x_last - player.x_map_player)
                 player.rect.y += (player.y_last - player.y_map_player)
 
+                dark.rect.x = player.rect.x - 462
+                dark.rect.y = player.rect.y - 307
+
             if pygame.sprite.spritecollide(player, obstacle_group, False):  # персонаж
                 player.rect.x += (player.x_last - player.x_map_player)
                 player.rect.y += (player.y_last - player.y_map_player)
+
+                dark.rect.x = player.rect.x - 462
+                dark.rect.y = player.rect.y - 307
 
             player.x_last = player.x_map_player  # x персонажа до столкновения
             player.y_last = player.y_map_player  # y персонажа до столкновения
@@ -1054,6 +1077,9 @@ while True:
             if status_scrap:
                 scrap.rect.x = player.rect.x
                 scrap.rect.y = player.rect.y + 20
+
+            dark.rect.x = player.rect.x - 462
+            dark.rect.y = player.rect.y - 307
 
             end_game()  # проверка окончания игры
 
