@@ -49,12 +49,10 @@ while True:
         directory = 'data/interface/en'
 
     # ВЕРСИЯ ПРОГРАММЫ
-    version = '1.3.2'  # версия
+    version = '1.3.3'  # версия
 
-    # 1. Добавил звуковые эффекты
-    # 2. Переделал систему воспроизведения музыки
-    # 3. Незначительная оптимизации кода
-    # 4. Не исправил странный баг из прошлого обновления
+    # 1. Исправил баг из-за, которого при подборе бустера пропадали звуки шагов.
+    # 2. Незначительная оптимизации кода
 
     # ЗАГРУЗКА КАРТИНОК
     def load_image(name):
@@ -896,7 +894,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -918,7 +916,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -940,7 +938,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -962,7 +960,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -981,7 +979,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -1000,7 +998,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -1021,7 +1019,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
@@ -1042,7 +1040,7 @@ while True:
 
                 # звуки шагов
                 if status_sound:
-                    if count_step_sound == speed_step_sound:
+                    if count_step_sound >= speed_step_sound:
                         step_sound.play()
                         count_step_sound = 0
                     count_step_sound += 1
